@@ -53,7 +53,7 @@ function Partner() {
           onSubmit={async (e) => {
             e.preventDefault();
             const { error } = await supabase.from("suppliers").insert({ ...form, user_id: user!.id });
-            if (error) return toast.error(error.message);
+            if (error) { toast.error(error.message); return; }
             toast.success("Application submitted");
             qc.invalidateQueries({ queryKey: ["my-supplier"] });
           }}

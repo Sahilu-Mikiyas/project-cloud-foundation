@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Search = { next?: string };
+type Search = { next?: string | undefined };
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): Search => ({
-    next: typeof s.next === "string" && s.next.startsWith("/") && !s.next.startsWith("//") ? s.next : undefined,
+    next: typeof s["next"] === "string" && s["next"].startsWith("/") && !s["next"].startsWith("//") ? s["next"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -68,7 +68,7 @@ function AuthPage() {
   const oauth = async (provider: "google" | "lovable") => {
     if (next) sessionStorage.setItem("shanta_next", next);
     const r = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin });
-    if (r.error) return toast.error(r.error.message ?? "Sign in failed");
+    if (r.error) { toast.error(r.error.message ?? "Sign in failed"); return; }
     if (r.redirected) return;
     done();
   };

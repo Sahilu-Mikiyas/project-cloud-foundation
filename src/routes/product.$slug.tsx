@@ -59,12 +59,12 @@ function ProductPage() {
   const deposit = Math.floor((subtotal * p.deposit_percent) / 100);
 
   const reserve = async () => {
-    if (!user) return navigate({ to: "/auth", search: { next: `/product/${slug}` } });
+    if (!user) { navigate({ to: "/auth", search: { next: `/product/${slug}` } }); return; }
     if (!variantId) return;
     setBusy(true);
     const { data, error } = await supabase.rpc("reserve_order", { _variant_id: variantId, _quantity: qty });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Reservation created");
     navigate({ to: "/account/orders/$id", params: { id: data as string } });
   };

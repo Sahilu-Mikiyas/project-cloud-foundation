@@ -55,7 +55,7 @@ function Orders() {
   });
   const setStatus = async (id: string, status: string) => {
     const { error } = await supabase.rpc("admin_set_order_status", { _order_id: id, _status: status as never, _note: "Updated by operations" });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Status updated");
     qc.invalidateQueries({ queryKey: ["admin-orders"] });
   };
@@ -100,14 +100,14 @@ function Catalog() {
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     const cents = Math.round(Number(f.price) * 100);
-    if (!Number.isFinite(cents) || cents <= 0) return toast.error("Enter a valid price");
+    if (!Number.isFinite(cents) || cents <= 0) { toast.error("Enter a valid price"); return; }
     const slug = (f.slug || f.name).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const { data, error } = await supabase.from("products").insert({
       name: f.name, slug, brand: f.brand || null, description: f.description || null, image_url: f.image_url || null,
       price_etb_cents: cents, deposit_percent: Number(f.deposit_percent), delivery_days: Number(f.delivery_days),
       category_id: f.category_id || null, is_published: false,
     }).select("id").single();
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     const labels = (f.variants || "Standard").split(",").map((s) => s.trim()).filter(Boolean);
     await supabase.from("product_variants").insert(labels.map((label, i) => ({ product_id: data.id, label, sort_order: i })));
     toast.success("Product created as draft");
@@ -117,7 +117,7 @@ function Catalog() {
 
   const togglePublish = async (id: string, v: boolean) => {
     const { error } = await supabase.from("products").update({ is_published: v }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     qc.invalidateQueries();
   };
 
@@ -164,7 +164,7 @@ function Partners() {
   const { data = [] } = useQuery({ queryKey: ["admin-suppliers"], queryFn: async () => (await supabase.from("suppliers").select("*").order("created_at", { ascending: false })).data ?? [] });
   const review = async (id: string, status: "verified" | "rejected" | "suspended") => {
     const { error } = await supabase.rpc("admin_review_supplier", { _supplier_id: id, _status: status });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Partner updated");
     qc.invalidateQueries({ queryKey: ["admin-suppliers"] });
   };
