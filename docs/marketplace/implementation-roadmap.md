@@ -67,16 +67,17 @@ collection stays on hold until Shanta selects a gateway.
   cancelled orders, and buyer/seller/admin/anonymous read boundaries before
   release.
 
-## Stage 6 — Seller inventory and preorder capacity
+## Stage 6 — Seller inventory and preorder capacity (implemented in current work)
 
-- Add optional per-variant stock or preorder capacity, an explicit unlimited
-  mode, and an availability switch.
-- Reserve capacity atomically during order creation and prevent concurrent
-  requests from exceeding the limit.
-- Release capacity for a declined or cancelled unpaid order; define separate
-  handling for paid orders when payments are enabled.
-- Display remaining availability publicly without exposing seller-only
-  inventory controls. Decide whether sellers can accept backorders.
+- Add an optional per-variant preorder limit; a blank limit means unlimited.
+- Reserve capacity atomically during seller order creation and prevent
+  concurrent requests from exceeding the limit.
+- Release capacity when an unpaid order is cancelled or expired. Paid-order
+  cancellation and refund handling remains deferred until payment is enabled.
+- Show remaining limited capacity on the product page and let sellers adjust
+  the limit without going below units already committed.
+- A limit represents the total accepted order quantity for the variant;
+  delivered orders continue to count as consumed capacity.
 
 ## Stage 7 — Seller fulfillment milestones (after deposit confirmation)
 

@@ -37,7 +37,7 @@ function ProductPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, product_variants(id, label, price_delta_etb_cents, is_available, sort_order)")
+        .select("*, product_variants(id, label, price_delta_etb_cents, is_available, sort_order, inventory_limit, inventory_committed)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -47,7 +47,9 @@ function ProductPage() {
 
   const variants = [...(p?.product_variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
   useEffect(() => {
-    if (!variantId && variants.length) setVariantId(variants.find((v) => v.is_available)?.id ?? null);
+    if (!variantId && variants.length) setVariantId(variants.find((variant) =>
+      variant.is_available && (variant.inventory_limit === null || variant.inventory_committed < variant.inventory_limit),
+    )?.id ?? null);
   }, [variants, variantId]);
 
   if (isLoading) return <div className="mx-auto max-w-7xl px-4 py-12 md:px-8"><Skeleton className="h-[600px] w-full" /></div>;
@@ -58,6 +60,10 @@ function ProductPage() {
   const unit = p.price_etb_cents + (v?.price_delta_etb_cents ?? 0);
   const subtotal = unit * qty;
   const deposit = Math.floor((subtotal * p.deposit_percent) / 100);
+  const remaining = !v || v.inventory_limit === null
+    ? null
+    : Math.max(0, v.inventory_limit - v.inventory_committed);
+  const maxQuantity = remaining === null ? 10 : Math.min(10, Math.max(1, remaining));
 
   const reserve = async () => {
     if (!user) { navigate({ to: "/auth", search: { next: `/product/${slug}` } }); return; }
@@ -104,8 +110,8 @@ function ProductPage() {
               {variants.map((x) => (
                 <button
                   key={x.id}
-                  disabled={!x.is_available}
-                  onClick={() => { resetRequestKey(); setVariantId(x.id); }}
+                  disabled={!x.is_available || (x.inventory_limit !== null && x.inventory_committed >= x.inventory_limit)}
+                  onClick={() => { resetRequestKey(); setVariantId(x.id); setQty(1); }}
                   className={cn(
                     "min-h-11 rounded-md border px-4 text-sm transition-colors disabled:opacity-40",
                     variantId === x.id ? "border-ink bg-ink text-ink-foreground" : "hover:bg-sand",
@@ -118,12 +124,18 @@ function ProductPage() {
           </div>
         )}
 
+        {p.listing_type === "seller" && remaining !== null && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {remaining === 0 ? "This option has reached its preorder limit." : `${remaining} available for preorder`}
+          </p>
+        )}
+
         <div className="mt-6">
           <p className="mb-3 text-sm font-medium">Quantity</p>
           <div className="inline-flex items-center rounded-md border">
             <button className="p-3" aria-label="Decrease" onClick={() => { resetRequestKey(); setQty((q) => Math.max(1, q - 1)); }}><Minus className="h-4 w-4" /></button>
             <span className="tabular w-10 text-center">{qty}</span>
-            <button className="p-3" aria-label="Increase" onClick={() => { resetRequestKey(); setQty((q) => Math.min(10, q + 1)); }}><Plus className="h-4 w-4" /></button>
+            <button className="p-3" aria-label="Increase" disabled={qty >= maxQuantity} onClick={() => { resetRequestKey(); setQty((q) => Math.min(maxQuantity, q + 1)); }}><Plus className="h-4 w-4" /></button>
           </div>
         </div>
 
@@ -134,7 +146,7 @@ function ProductPage() {
           <p className="pt-2 text-xs text-muted-foreground">Estimated delivery ~{p.delivery_days} days after a partner is assigned.</p>
         </div>
 
-        <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId} onClick={reserve}>
+        <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId || (p.listing_type === "seller" && remaining === 0)} onClick={reserve}>
           {busy ? "Creating order…" : p.listing_type === "seller" ? user ? "Create preorder (deposit due)" : "Sign in to preorder" : user ? "Reserve order" : "Sign in to reserve"}
         </Button>
         <p className="mt-3 text-center text-xs text-muted-foreground">

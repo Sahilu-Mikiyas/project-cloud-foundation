@@ -10,6 +10,9 @@ products.
 - Operations can verify, reject or suspend the seller account.
 - Verified sellers can create product drafts, set an ETB price and deposit
   percentage, provide variants and an image URL, and publish or pause a listing.
+- Sellers can set an optional preorder limit per option. A blank limit is
+  unlimited; limited availability is checked and reserved atomically when a
+  buyer submits a preorder.
 - Sellers can update the price and deposit percentage of their listings.
 - Published listings appear in the same catalog grid as sourcing products and
   can be filtered by channel.
@@ -38,6 +41,8 @@ products.
   confirmation are a later stage.
 - Seller acceptance confirms availability only. Fulfillment remains blocked
   until payment confirmation is implemented.
+- Cancelling or expiring an unpaid seller order releases its committed capacity.
+  Delivered orders remain counted against the seller's configured total limit.
 
 ## Current limits
 
