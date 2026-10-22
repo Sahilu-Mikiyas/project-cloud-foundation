@@ -35,12 +35,14 @@ function Admin() {
       <h1 className="text-3xl font-extrabold">Operations</h1>
       <Tabs defaultValue="orders" className="mt-6">
         <TabsList>
+          <TabsTrigger value="operations">Operations</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="catalog">Catalog</TabsTrigger>
           <TabsTrigger value="partners">Partners</TabsTrigger>
           <TabsTrigger value="sellers">Sellers</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
         </TabsList>
+        <TabsContent value="operations"><OperationsQueue /></TabsContent>
         <TabsContent value="orders"><Orders /></TabsContent>
         <TabsContent value="catalog"><Catalog /></TabsContent>
         <TabsContent value="partners"><Partners /></TabsContent>
@@ -48,6 +50,80 @@ function Admin() {
         <TabsContent value="support"><SupportCases /></TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function OperationsQueue() {
+  const [queue, setQueue] = useState("seller_decisions");
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ["operations-orders"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("orders")
+        .select("id, reference, status, order_type, seller_response, created_at")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const { data: sellers = [], isLoading: sellersLoading } = useQuery({
+    queryKey: ["operations-suspended-sellers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("seller_profiles")
+        .select("id, business_name, status, reviewed_at")
+        .eq("status", "suspended").order("reviewed_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const { data: supportCases = [], isLoading: casesLoading } = useQuery({
+    queryKey: ["operations-open-support"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("support_cases")
+        .select("id, order_id, subject, status, created_at, orders(reference)")
+        .in("status", ["open", "in_progress", "waiting_on_customer"])
+        .order("updated_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const { data: audit = [], isLoading: auditLoading } = useQuery({
+    queryKey: ["operations-audit"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("admin_action_events")
+        .select("id, actor_id, action, entity_type, entity_id, reason, created_at")
+        .order("created_at", { ascending: false }).limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const staleBefore = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const pendingSeller = orders.filter((o) => o.order_type === "seller_listing" && o.seller_response === "pending" && o.status === "awaiting_customer_deposit");
+  const stalled = orders.filter((o) => ["assigned", "purchased", "in_transit", "arrived", "ready_for_handover", "seller_preparing", "seller_in_delivery"].includes(o.status) && new Date(o.created_at).getTime() < staleBefore);
+  const cancellations = orders.filter((o) => o.status === "cancelled");
+  const queues = [
+    { id: "seller_decisions", label: "Seller decisions", count: pendingSeller.length },
+    { id: "stalled", label: "Stalled fulfillment · 7+ days", count: stalled.length },
+    { id: "suspended", label: "Suspended sellers", count: sellers.length },
+    { id: "cancellations", label: "Cancellations", count: cancellations.length },
+    { id: "support", label: "Open support cases", count: supportCases.length },
+    { id: "audit", label: "Recent admin actions", count: audit.length },
+  ];
+  const activeOrders = queue === "seller_decisions" ? pendingSeller : queue === "stalled" ? stalled : cancellations;
+  const loading = (queue === "suspended" && sellersLoading) || (queue === "support" && casesLoading) || (queue === "audit" && auditLoading) || (!(["suspended", "support", "audit"].includes(queue)) && ordersLoading);
+  return (
+    <section className="mt-4 space-y-5">
+      <div><h2 className="text-lg font-bold">Operational queues</h2><p className="text-sm text-muted-foreground">Review pending work and items that need follow-up.</p></div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        {queues.map((item) => <Button key={item.id} type="button" variant={queue === item.id ? "default" : "outline"} className="h-auto justify-between gap-3 p-4" onClick={() => setQueue(item.id)}><span className="text-left whitespace-normal">{item.label}</span><span className="tabular-nums">{item.count}</span></Button>)}
+      </div>
+      <div className="divide-y rounded-md border bg-card">
+        {loading && <p className="p-5 text-sm text-muted-foreground">Loading queue…</p>}
+        {!loading && queue === "suspended" && (sellers.length ? sellers.map((seller) => <div key={seller.id} className="flex items-center justify-between gap-4 p-4"><span className="font-medium">{seller.business_name}</span><span className="text-sm text-muted-foreground">Suspended {seller.reviewed_at ? new Date(seller.reviewed_at).toLocaleDateString() : ""}</span></div>) : <p className="p-5 text-sm text-muted-foreground">No suspended sellers.</p>)}
+        {!loading && queue === "support" && (supportCases.length ? supportCases.map((c) => <div key={c.id} className="flex items-center justify-between gap-4 p-4"><div><Link to="/account/orders/$id" params={{ id: c.order_id }} className="font-medium underline">{c.subject}</Link><p className="text-xs text-muted-foreground">{c.orders?.reference ?? "Order"} · {c.status.replaceAll("_", " ")}</p></div><span className="text-sm text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</span></div>) : <p className="p-5 text-sm text-muted-foreground">No open support cases.</p>)}
+        {!loading && queue === "audit" && (audit.length ? audit.map((event) => <div key={event.id} className="flex flex-wrap items-start justify-between gap-3 p-4"><div><p className="font-medium">{event.action.replaceAll("_", " ")} · {event.entity_type.replaceAll("_", " ")}</p><p className="text-sm">{event.reason}</p><p className="text-xs text-muted-foreground">Admin {event.actor_id.slice(0, 8)} · Record {event.entity_id}</p></div><time className="text-xs text-muted-foreground">{new Date(event.created_at).toLocaleString()}</time></div>) : <p className="p-5 text-sm text-muted-foreground">No operational actions have been recorded.</p>)}
+        {!loading && !(["suspended", "support", "audit"].includes(queue)) && (activeOrders.length ? activeOrders.map((o) => <div key={o.id} className="flex items-center justify-between gap-4 p-4"><div><p className="font-medium">{o.reference}</p><p className="text-xs text-muted-foreground">{o.status.replaceAll("_", " ")} · {o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing"}</p></div><div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</span><Link to="/account/orders/$id" params={{ id: o.id }} className="text-sm underline">View</Link></div></div>) : <p className="p-5 text-sm text-muted-foreground">Nothing in this queue.</p>)}
+      </div>
+    </section>
   );
 }
 
@@ -65,10 +141,12 @@ function SupportCases() {
     },
   });
   const setCaseStatus = async (caseId: string, status: "open" | "in_progress" | "waiting_on_customer" | "resolved" | "closed") => {
+    const note = window.prompt("Reason for this support case status change:")?.trim();
+    if (!note) return;
     const { error } = await supabase.rpc("admin_set_support_case_status", {
       _case_id: caseId,
       _status: status,
-      _note: `Status changed to ${status.replaceAll("_", " ")}`,
+      _note: note,
     });
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["admin-support-cases"] });
@@ -106,7 +184,9 @@ function Orders() {
     queryFn: async () => (await supabase.from("orders").select("id, reference, order_type, status, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)").order("created_at", { ascending: false })).data ?? [],
   });
   const setStatus = async (id: string, status: string) => {
-    const { error } = await supabase.rpc("admin_set_order_status", { _order_id: id, _status: status as never, _note: "Updated by operations" });
+    const note = window.prompt(`Reason for changing this order to ${status.replaceAll("_", " ")}:`)?.trim();
+    if (!note) return;
+    const { error } = await supabase.rpc("admin_set_order_status", { _order_id: id, _status: status as never, _note: note });
     if (error) { toast.error(error.message); return; }
     toast.success("Status updated");
     qc.invalidateQueries({ queryKey: ["admin-orders"] });
@@ -129,7 +209,7 @@ function Orders() {
                 <Select value={o.status} onValueChange={(v) => setStatus(o.id, v)}>
                   <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(ORDER_STATUS_LABEL)
-                    .filter(([status]) => ["awaiting_customer_deposit", "cancelled", "expired", "disputed"].includes(status))
+                    .filter(([status]) => ["cancelled", "expired"].includes(status))
                     .map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
                 </Select>
               </td>
@@ -218,7 +298,9 @@ function Partners() {
   const qc = useQueryClient();
   const { data = [] } = useQuery({ queryKey: ["admin-suppliers"], queryFn: async () => (await supabase.from("suppliers").select("*").order("created_at", { ascending: false })).data ?? [] });
   const review = async (id: string, status: "verified" | "rejected" | "suspended") => {
-    const { error } = await supabase.rpc("admin_review_supplier", { _supplier_id: id, _status: status });
+    const note = window.prompt(`Reason for ${status.replaceAll("_", " ")} this partner:`)?.trim();
+    if (!note) return;
+    const { error } = await supabase.rpc("admin_review_supplier", { _supplier_id: id, _status: status, _note: note });
     if (error) { toast.error(error.message); return; }
     toast.success("Partner updated");
     qc.invalidateQueries({ queryKey: ["admin-suppliers"] });
@@ -256,7 +338,9 @@ function Sellers() {
     },
   });
   const review = async (id: string, status: "verified" | "rejected" | "suspended") => {
-    const { error } = await supabase.rpc("admin_review_seller", { _seller_id: id, _status: status });
+    const note = window.prompt(`Reason for ${status.replaceAll("_", " ")} this seller:`)?.trim();
+    if (!note) return;
+    const { error } = await supabase.rpc("admin_review_seller", { _seller_id: id, _status: status, _note: note });
     if (error) { toast.error(error.message); return; }
     toast.success("Seller account updated");
     qc.invalidateQueries({ queryKey: ["admin-sellers"] });
