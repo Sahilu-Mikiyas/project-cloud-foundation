@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -20,27 +21,25 @@ export function SiteHeader() {
       return count ?? 0;
     },
   });
-  const link = "text-sm text-ink-foreground/75 hover:text-ink-foreground transition-colors";
+  const link = "whitespace-nowrap text-sm font-medium text-foreground/70 transition-colors hover:text-foreground";
   return (
-    <header className="sticky top-0 z-40 bg-ink text-ink-foreground">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 md:px-8">
-        <Link to="/" className="font-display text-xl font-extrabold tracking-[0.2em]">SHANTA</Link>
-        <nav className="hidden items-center gap-6 md:flex">
-          <Link to="/shop" className={link} activeProps={{ className: "text-ink-foreground" }}>Shop</Link>
-          <Link to="/partner" className={link}>{isSupplier ? "Sell or source" : "Sell or source with us"}</Link>
-          {isAdmin && <Link to="/admin" className={link}>Operations</Link>}
-        </nav>
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+      <div className="mx-auto flex h-[4.25rem] max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
+        <Link to="/" className="flex items-center gap-2.5" aria-label="Shanta home">
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">S</span>
+          <span className="font-display text-[1.45rem] font-semibold tracking-tight">Shanta</span>
+        </Link>
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              <Link to="/account" className={link}>My orders</Link>
-              <Link to="/account" className={link} aria-label={`Notifications, ${unreadNotifications} unread`}>
-                Inbox{unreadNotifications > 0 && <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{unreadNotifications}</span>}
+              <Link to="/account" className="hidden text-sm font-medium text-foreground/70 hover:text-foreground sm:inline">My orders</Link>
+              <Link to="/account" className="relative grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-sm font-semibold hover:bg-muted" aria-label={`Inbox, ${unreadNotifications} unread`}>
+                <Bell className="h-4 w-4" aria-hidden />{unreadNotifications > 0 && <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary" />}
               </Link>
               <Button
                 size="sm"
-                variant="ghost"
-                className="text-ink-foreground hover:bg-sidebar-accent hover:text-ink-foreground"
+                variant="outline"
+                className="rounded-full bg-background"
                 onClick={async () => {
                   await supabase.auth.signOut();
                   navigate({ to: "/" });
@@ -50,20 +49,32 @@ export function SiteHeader() {
               </Button>
             </>
           ) : (
-            <Button asChild size="sm"><Link to="/auth">Sign in</Link></Button>
+            <Button asChild size="sm" className="rounded-full px-5"><Link to="/auth">Sign in</Link></Button>
           )}
         </div>
       </div>
+      <nav aria-label="Main navigation" className="mx-auto flex max-w-7xl items-center gap-7 overflow-x-auto px-4 pb-3 md:px-8">
+        <Link to="/shop" className={link}>Shop all</Link>
+        <a href="/shop?channel=seller" className={link}>Local sellers</a>
+        <a href="/shop?channel=sourcing" className={link}>Dubai sourcing</a>
+        <Link to="/partner" className={link}>{isSupplier ? "Partner workspace" : "Sell with Shanta"}</Link>
+        {isAdmin && <Link to="/admin" className={link}>Operations</Link>}
+      </nav>
     </header>
   );
 }
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t bg-sand/50">
-      <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-10 text-sm text-muted-foreground md:flex-row md:justify-between md:px-8">
-        <p><span className="font-display font-bold tracking-[0.2em] text-foreground">SHANTA</span> — Your access to the Dubai market.</p>
-        <p>Seller listings · Verified Dubai sourcing · Transparent prices</p>
+    <footer className="mt-24 border-t border-border bg-card">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 text-sm text-muted-foreground md:grid-cols-[1.4fr_1fr_1fr] md:px-8">
+        <div>
+          <p className="font-display text-2xl font-semibold text-foreground">Shanta</p>
+          <p className="mt-2 max-w-sm">Good finds from trusted local sellers and verified Dubai sourcing partners.</p>
+        </div>
+        <div className="space-y-2"><p className="font-semibold text-foreground">Explore</p><p><Link to="/shop" className="hover:text-foreground">Shop all products</Link></p><p><a href="/shop?channel=seller" className="hover:text-foreground">Local sellers</a></p><p><a href="/shop?channel=sourcing" className="hover:text-foreground">Dubai sourcing</a></p></div>
+        <div className="space-y-2"><p className="font-semibold text-foreground">For partners</p><p><Link to="/partner" className="hover:text-foreground">Sell or source with Shanta</Link></p><p className="pt-3 text-xs">Prices in ETB · Deposits shown before ordering</p></div>
+        <div className="border-t border-border pt-5 text-xs md:col-span-3">© {new Date().getFullYear()} Shanta. Made for confident shopping.</div>
       </div>
     </footer>
   );
