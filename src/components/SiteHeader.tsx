@@ -2,10 +2,24 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 
 export function SiteHeader() {
   const { user, isAdmin, isSupplier } = useAuth();
   const navigate = useNavigate();
+  const { data: unreadNotifications = 0 } = useQuery({
+    queryKey: ["unread-notifications", user?.id],
+    enabled: !!user,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("user_notifications")
+        .select("id", { count: "exact", head: true })
+        .is("read_at", null);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
   const link = "text-sm text-ink-foreground/75 hover:text-ink-foreground transition-colors";
   return (
     <header className="sticky top-0 z-40 bg-ink text-ink-foreground">
@@ -20,6 +34,9 @@ export function SiteHeader() {
           {user ? (
             <>
               <Link to="/account" className={link}>My orders</Link>
+              <Link to="/account" className={link} aria-label={`Notifications, ${unreadNotifications} unread`}>
+                Inbox{unreadNotifications > 0 && <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{unreadNotifications}</span>}
+              </Link>
               <Button
                 size="sm"
                 variant="ghost"
