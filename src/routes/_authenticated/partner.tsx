@@ -324,6 +324,8 @@ function SellerListings({ userId }: { userId: string }) {
     qc.invalidateQueries({ queryKey: ["seller-orders", userId] });
     qc.invalidateQueries({ queryKey: ["order"] });
     qc.invalidateQueries({ queryKey: ["my-orders", userId] });
+    qc.invalidateQueries({ queryKey: ["my-notifications", userId] });
+    qc.invalidateQueries({ queryKey: ["unread-notifications", userId] });
   };
 
   return (

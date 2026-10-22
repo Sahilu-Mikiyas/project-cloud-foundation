@@ -92,12 +92,14 @@ collection stays on hold until Shanta selects a gateway.
   gateway is chosen, implement the data model and UI only if they cannot imply
   that an unpaid order is being fulfilled.
 
-## Stage 8 — Notifications
+## Stage 8 — Notifications (in-app order alerts implemented)
 
-- Create an outbox for order-created, seller-decision and fulfillment events so
-  notifications can retry without duplicating or losing state changes.
-- Start with in-app order history; add email/SMS only after consent, provider,
-  delivery and opt-out requirements are decided.
+- Order creation and seller-decision events create private, durable in-app
+  notifications in the same transaction; unique event/user keys prevent
+  duplicates.
+- Users can see and mark their own notifications read. A later external
+  delivery outbox can add retryable email/SMS after consent, provider, delivery
+  and opt-out requirements are decided.
 - Do not put sensitive order details in push or SMS previews.
 
 ## Stage 9 — Buyer support, cancellation and disputes

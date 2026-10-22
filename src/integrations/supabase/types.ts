@@ -259,6 +259,54 @@ export type Database = {
           },
         ]
       }
+      user_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          order_event_id: string
+          order_id: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          order_event_id: string
+          order_id: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          order_event_id?: string
+          order_id?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notifications_order_event_id_fkey"
+            columns: ["order_event_id"]
+            isOneToOne: false
+            referencedRelation: "order_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
           id: string
@@ -513,6 +561,10 @@ export type Database = {
       }
       seller_respond_to_order: {
         Args: { _order_id: string; _response: "accepted" | "declined" }
+        Returns: undefined
+      }
+      mark_notification_read: {
+        Args: { _notification_id: string }
         Returns: undefined
       }
       reserve_sourcing_order: {
