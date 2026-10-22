@@ -125,14 +125,18 @@ collection stays on hold until Shanta selects a gateway.
   unpaid or unfulfilled states. Payment and dispute statuses remain controlled
   by their verified workflows.
 
-## Stage 11 — Listing quality and media
+## Stage 11 — Listing quality and media (implemented)
 
-- Add multiple images through controlled storage with file validation and
-  moderation before public display.
-- Improve seller descriptions, delivery estimates, variant-specific images and
-  listing previews.
-- Add reporting and takedown actions without changing existing sourcing
-  catalog management.
+- Add private seller listing media storage with JPEG, PNG and WebP allowlists,
+  a 5 MB file limit, client signature checks, seller/product path ownership,
+  and row-level moderation before shoppers can access images.
+- Support seller image galleries and images tied to a product option. Product
+  pages display the approved gallery for the selected option.
+- Add seller editing for descriptions and delivery estimates with a customer
+  preview.
+- Add signed-in image reports and an admin review queue. Admin rejection hides
+  the image and records the action and reason in the operations audit log.
+- Existing sourcing catalog management remains unchanged.
 
 ## Stage 12 — Release readiness
 
