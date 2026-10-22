@@ -209,6 +209,7 @@ function SellerListings({ userId }: { userId: string }) {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [priceEdit, setPriceEdit] = useState({ price: "", deposit_percent: "" });
+  const [inventoryEdits, setInventoryEdits] = useState<Record<string, string>>({});
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -222,7 +223,7 @@ function SellerListings({ userId }: { userId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, brand, price_etb_cents, deposit_percent, is_published, product_variants(id, label)")
+        .select("id, name, brand, price_etb_cents, deposit_percent, is_published, product_variants(id, label, inventory_limit, inventory_committed)")
         .eq("seller_user_id", userId)
         .eq("listing_type", "seller")
         .order("created_at", { ascending: false });
@@ -297,6 +298,22 @@ function SellerListings({ userId }: { userId: string }) {
     qc.invalidateQueries({ queryKey: ["products"] });
   };
 
+  const saveInventoryLimit = async (variant: { id: string; inventory_committed: number; inventory_limit: number | null }) => {
+    const raw = inventoryEdits[variant.id] ?? "";
+    const limit = raw.trim() === "" ? null : Number(raw);
+    if (limit !== null && (!Number.isSafeInteger(limit) || limit < variant.inventory_committed)) {
+      toast.error(`Capacity must be at least ${variant.inventory_committed} committed units`);
+      return;
+    }
+    const { error } = await supabase.from("product_variants").update({ inventory_limit: limit }).eq("id", variant.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(limit === null ? "Preorder limit removed" : "Preorder limit updated");
+    setInventoryEdits((current) => { const next = { ...current }; delete next[variant.id]; return next; });
+    qc.invalidateQueries({ queryKey: ["seller-listings", userId] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+    qc.invalidateQueries({ queryKey: ["product"] });
+  };
+
   const respondToOrder = async (orderId: string, response: "accepted" | "declined") => {
     const { error } = await supabase.rpc("seller_respond_to_order", {
       _order_id: orderId,
@@ -342,7 +359,23 @@ function SellerListings({ userId }: { userId: string }) {
               <p className="font-medium">{listing.name}</p>
               <p className="tabular text-sm text-muted-foreground">{formatEtb(listing.price_etb_cents)} · {listing.deposit_percent}% deposit · {listing.product_variants.length} options</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {listing.product_variants.map((variant) => <span key={variant.id} className="rounded-full bg-muted px-2 py-0.5 text-xs">{variant.label}</span>)}
+                {listing.product_variants.map((variant) => (
+                  <div key={variant.id} className="flex flex-wrap items-center gap-2 rounded-md bg-muted px-2 py-1.5 text-xs">
+                    <span>{variant.label}</span>
+                    <span className="text-muted-foreground">{variant.inventory_limit === null ? "Unlimited" : `${variant.inventory_committed}/${variant.inventory_limit} committed`}</span>
+                    <Input
+                      aria-label={`Preorder limit for ${variant.label}`}
+                      className="h-8 w-24 bg-background"
+                      type="number"
+                      min={variant.inventory_committed}
+                      step={1}
+                      placeholder="Unlimited"
+                      value={inventoryEdits[variant.id] ?? (variant.inventory_limit === null ? "" : String(variant.inventory_limit))}
+                      onChange={(event) => setInventoryEdits((current) => ({ ...current, [variant.id]: event.target.value }))}
+                    />
+                    <Button size="sm" variant="outline" onClick={() => saveInventoryLimit(variant)}>Save limit</Button>
+                  </div>
+                ))}
               </div>
               {editingId === listing.id && (
                 <div className="mt-3 flex flex-wrap items-end gap-2">

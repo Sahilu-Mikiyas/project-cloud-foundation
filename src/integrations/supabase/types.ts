@@ -262,6 +262,8 @@ export type Database = {
       product_variants: {
         Row: {
           id: string
+          inventory_committed: number
+          inventory_limit: number | null
           is_available: boolean
           label: string
           price_delta_etb_cents: number
@@ -270,6 +272,8 @@ export type Database = {
         }
         Insert: {
           id?: string
+          inventory_committed?: number
+          inventory_limit?: number | null
           is_available?: boolean
           label: string
           price_delta_etb_cents?: number
@@ -278,6 +282,8 @@ export type Database = {
         }
         Update: {
           id?: string
+          inventory_committed?: number
+          inventory_limit?: number | null
           is_available?: boolean
           label?: string
           price_delta_etb_cents?: number
