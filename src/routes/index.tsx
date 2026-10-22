@@ -10,9 +10,9 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Shanta — Your access to the Dubai market" },
-      { name: "description", content: "Reserve products from Dubai with a deposit. Verified partners source and bring them to Ethiopia, tracked end to end." },
+      { name: "description", content: "Discover seller listings and reserve products sourced from Dubai through Shanta's verified partners." },
       { property: "og:title", content: "Shanta — Your access to the Dubai market" },
-      { property: "og:description", content: "Curated cross-border shopping with transparent prices and verified sourcing partners." },
+      { property: "og:description", content: "Browse seller listings and Dubai sourcing products with transparent ETB prices." },
     ],
   }),
   component: Home,
@@ -24,7 +24,7 @@ function Home() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, slug, name, brand, image_url, price_etb_cents, delivery_days")
+        .select("id, slug, name, brand, image_url, price_etb_cents, delivery_days, listing_type")
         .eq("is_published", true)
         .order("created_at", { ascending: false })
         .limit(4);
@@ -37,16 +37,16 @@ function Home() {
     <>
       <section className="mx-auto grid max-w-7xl gap-10 px-4 pb-16 pt-12 md:grid-cols-12 md:px-8 md:pt-20">
         <div className="flex flex-col justify-center md:col-span-6">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-primary">Dubai → Addis Ababa</p>
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-primary">Local sellers · Dubai sourcing</p>
           <h1 className="text-[34px] font-extrabold leading-[1.05] md:text-[64px]">
             Your access to the Dubai market.
           </h1>
           <p className="mt-6 max-w-md text-lg text-muted-foreground">
-            A curated cross-border shopping experience built around transparent prices, verified sourcing partners, and tracked fulfillment.
+            Shop products listed by local sellers or reserve items sourced from Dubai through verified partners.
           </p>
           <div className="mt-8 flex gap-3">
             <Button asChild size="lg" className="h-12 px-6"><Link to="/shop">Shop the collection</Link></Button>
-            <Button asChild size="lg" variant="outline" className="h-12 px-6"><Link to="/partner">Source with us</Link></Button>
+            <Button asChild size="lg" variant="outline" className="h-12 px-6"><Link to="/partner">Sell or source with us</Link></Button>
           </div>
         </div>
         <div className="md:col-span-6">
@@ -74,7 +74,7 @@ function Home() {
 
       <section className="mx-auto max-w-7xl px-4 pt-16 md:px-8">
         <div className="mb-8 flex items-end justify-between">
-          <h2 className="text-2xl font-bold md:text-3xl">New from Dubai</h2>
+          <h2 className="text-2xl font-bold md:text-3xl">Latest listings</h2>
           <Link to="/shop" className="text-sm font-medium underline-offset-4 hover:underline">View all</Link>
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-6">
