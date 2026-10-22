@@ -159,6 +159,100 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_attempts: {
+        Row: {
+          amount_etb_cents: number
+          checkout_url: string | null
+          created_at: string
+          currency: string
+          id: string
+          idempotency_key: string
+          order_id: string
+          provider: string
+          provider_reference: string | null
+          purpose: string
+          status: Database["public"]["Enums"]["payment_attempt_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount_etb_cents: number
+          checkout_url?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          idempotency_key: string
+          order_id: string
+          provider: string
+          provider_reference?: string | null
+          purpose?: string
+          status?: Database["public"]["Enums"]["payment_attempt_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount_etb_cents?: number
+          checkout_url?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          idempotency_key?: string
+          order_id?: string
+          provider?: string
+          provider_reference?: string | null
+          purpose?: string
+          status?: Database["public"]["Enums"]["payment_attempt_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_attempts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_provider_events: {
+        Row: {
+          attempt_id: string
+          event_type: string
+          id: string
+          processed_at: string | null
+          processing_result: string | null
+          provider: string
+          provider_event_id: string
+          received_at: string
+        }
+        Insert: {
+          attempt_id: string
+          event_type: string
+          id?: string
+          processed_at?: string | null
+          processing_result?: string | null
+          provider: string
+          provider_event_id: string
+          received_at?: string
+        }
+        Update: {
+          attempt_id?: string
+          event_type?: string
+          id?: string
+          processed_at?: string | null
+          processing_result?: string | null
+          provider?: string
+          provider_event_id?: string
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_provider_events_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "payment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
           id: string
@@ -449,6 +543,13 @@ export type Database = {
         | "cancelled"
         | "expired"
         | "disputed"
+      payment_attempt_status:
+        | "pending"
+        | "checkout_started"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "expired"
       supplier_status: "pending" | "verified" | "rejected" | "suspended"
     }
     CompositeTypes: {
@@ -596,6 +697,14 @@ export const Constants = {
         "cancelled",
         "expired",
         "disputed",
+      ],
+      payment_attempt_status: [
+        "pending",
+        "checkout_started",
+        "succeeded",
+        "failed",
+        "cancelled",
+        "expired",
       ],
       supplier_status: ["pending", "verified", "rejected", "suspended"],
     },
