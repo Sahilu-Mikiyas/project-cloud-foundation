@@ -6,9 +6,20 @@ Give Shanta a polished, welcoming storefront with clear product discovery and
 distinct paths for local seller listings and Dubai sourcing. Use the reference
 site's editorial typography, generous spacing, strong hero, grouped navigation,
 curated content sections and visible trust signals as inspiration. Keep Shanta's
-own identity, warm market palette and commerce rules. This is a presentation and
+own identity and commerce rules. This is a presentation and
 navigation redesign: it must preserve current sourcing, seller, order, support,
 notification, moderation and operations capabilities.
+
+## Reference implementation
+
+The source of the visual reference is
+[addis-living-hub-fdc1fa93](https://github.com/Sahilu-Mikiyas/addis-living-hub-fdc1fa93),
+especially `src/styles.css`, `src/components/layout/Header.tsx`,
+`src/components/home/Hero.tsx`, `src/components/home/ValueProps.tsx` and
+`src/components/listings/ListingCard.tsx`. Reuse its design principles—Fraunces
+and Inter, black/white with restrained gold, compact grouped navigation, a
+photo-led hero, rounded 4:3 cards and crisp information hierarchy—while using
+Shanta's own product data, labels and workflows.
 
 ## Product classification
 
@@ -29,13 +40,17 @@ Every shopper-facing product and journey should make these distinctions clear:
 
 ## Visual direction
 
-- Use warm ivory surfaces, near-black typography, a restrained burnt-orange
-  action color, and green only for trust/success states. Keep contrast accessible.
-- Pair an expressive editorial serif for display headings with a clear sans-serif
-  for controls, prices and body copy. Use generous white space and a consistent
-  rounded card/image treatment.
+- Follow the reference's clean black-and-white base, restrained gold accent,
+  generous white space, and rounded surfaces; keep green reserved for semantic
+  trust/success states and preserve accessible contrast.
+- Use Fraunces for display headings and Inter for controls, prices and body copy.
+  Use the reference's large photographic hero, subtle gradients, clear card
+  hierarchy and 4:3 product photography where the content suits it.
 - Use real product/media assets already available or approved through the
   moderated media flow. Do not invent seller names, reviews, prices or stock.
+- Keep primary navigation compact and group secondary destinations under
+  Discover. Provide a deliberate mobile menu that retains channel, partner and
+  account access.
 - Build responsive page sections with clear content hierarchy. On mobile,
   navigation, search, filters and ordering actions must stay easy to reach.
 - Use motion sparingly and respect reduced-motion preferences.
