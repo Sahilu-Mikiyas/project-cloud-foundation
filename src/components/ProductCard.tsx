@@ -18,27 +18,27 @@ export function ProductCard({ p, index = 0 }: { p: ProductRow; index?: number })
     <Link
       to="/product/$slug"
       params={{ slug: p.slug }}
-      className="group block animate-rise"
+      className="group block animate-rise rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4"
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      <div className="aspect-[4/5] overflow-hidden rounded-md bg-sand">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-sand transition-shadow group-hover:shadow-card">
         <img
           src={productImage({ ...p, image_url: p.listing_type === "seller" ? null : p.image_url })}
           alt={p.name}
           loading="lazy"
           width={1024}
           height={1280}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
         />
+        <span className="absolute left-3 top-3 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[10px] font-semibold tracking-wide text-foreground shadow-sm backdrop-blur">
+          {p.listing_type === "seller" ? "LOCAL SELLER" : "DUBAI SOURCING"}
+        </span>
       </div>
-      <div className="mt-3 space-y-0.5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
-          {p.listing_type === "seller" ? "Seller listing" : "Dubai sourcing"}
-        </p>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">{p.brand}</p>
-        <h3 className="text-base font-semibold">{p.name}</h3>
-        <p className="tabular text-sm">{formatEtb(p.price_etb_cents)}</p>
-        <p className="text-xs text-muted-foreground">Delivered in ~{p.delivery_days} days</p>
+      <div className="mt-3 space-y-1 px-0.5">
+        {p.brand && <p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{p.brand}</p>}
+        <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 group-hover:text-primary sm:text-base">{p.name}</h3>
+        <p className="tabular text-sm font-semibold">{formatEtb(p.price_etb_cents)}</p>
+        <p className="text-xs text-muted-foreground">Estimated delivery · ~{p.delivery_days} days</p>
       </div>
     </Link>
   );
