@@ -19,7 +19,7 @@ export function ProductCard({ p, index = 0 }: { p: ProductRow; index?: number })
     <Link
       to="/product/$slug"
       params={{ slug: p.slug }}
-      className="group block animate-rise rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4"
+      className="editorial-card group block animate-rise rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4"
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-sand transition-shadow group-hover:shadow-card">
@@ -45,4 +45,3 @@ export function ProductCard({ p, index = 0 }: { p: ProductRow; index?: number })
     </Link>
   );
 }
-
