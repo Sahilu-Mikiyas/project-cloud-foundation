@@ -21,6 +21,9 @@ snapshots.
   items. Later listing edits do not change the existing order snapshot.
 - The seller can see the order status and totals for their listing, without the
   buyer's contact information.
+- The seller can accept availability or decline the unpaid preorder. Acceptance
+  leaves the order deposit-pending; decline cancels the order and records an
+  order event. Neither action collects money.
 
 ## Retry safety and payment state
 

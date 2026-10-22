@@ -125,6 +125,8 @@ export type Database = {
           reference: string
           request_hash: string | null
           seller_id: string | null
+          seller_responded_at: string | null
+          seller_response: "pending" | "accepted" | "declined" | null
           status: Database["public"]["Enums"]["order_status"]
           subtotal_etb_cents: number
           updated_at: string
@@ -139,6 +141,8 @@ export type Database = {
           reference?: string
           request_hash?: string | null
           seller_id?: string | null
+          seller_responded_at?: string | null
+          seller_response?: "pending" | "accepted" | "declined" | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_etb_cents: number
           updated_at?: string
@@ -153,6 +157,8 @@ export type Database = {
           reference?: string
           request_hash?: string | null
           seller_id?: string | null
+          seller_responded_at?: string | null
+          seller_response?: "pending" | "accepted" | "declined" | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_etb_cents?: number
           updated_at?: string
@@ -498,6 +504,10 @@ export type Database = {
       reserve_seller_order: {
         Args: { _quantity: number; _request_key: string; _variant_id: string }
         Returns: string
+      }
+      seller_respond_to_order: {
+        Args: { _order_id: string; _response: "accepted" | "declined" }
+        Returns: undefined
       }
       reserve_sourcing_order: {
         Args: { _quantity: number; _request_key: string; _variant_id: string }

@@ -16,6 +16,9 @@ products.
 - The storefront labels each product as a seller listing or Dubai sourcing.
 - Buyers can submit seller preorders. The order and item store snapshots of the
   listing name, option, price and deposit terms used at submission.
+- Sellers can accept a pending preorder to confirm availability or decline it,
+  which cancels the unpaid order. Acceptance does not mean the deposit was paid
+  and does not start preparation or delivery.
 - Order submissions are idempotent, so retrying the same request does not create
   another order. Sellers can see orders for their listings without customer
   contact information.
@@ -33,6 +36,8 @@ products.
 - Seller listing deposits do not create supplier assignment fees.
 - A preorder is not paid when it is created. Payment collection and provider
   confirmation are a later stage.
+- Seller acceptance confirms availability only. Fulfillment remains blocked
+  until payment confirmation is implemented.
 
 ## Current limits
 
