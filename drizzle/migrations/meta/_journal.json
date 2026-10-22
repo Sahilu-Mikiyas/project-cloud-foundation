@@ -15,6 +15,69 @@
       "when": 1792656000000,
       "tag": "0001_secure_admin_bootstrap",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792668602000,
+      "tag": "0002_seller_listings",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792668900000,
+      "tag": "0003_order_creation",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792670000000,
+      "tag": "0004_payment_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792670400000,
+      "tag": "0005_seller_order_response",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792670800000,
+      "tag": "0006_seller_inventory_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792671200000,
+      "tag": "0007_in_app_order_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792671600000,
+      "tag": "0008_order_support_and_unpaid_cancellation",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792672000000,
+      "tag": "0009_operations_queues_and_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792672400000,
+      "tag": "0010_listing_media_moderation",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import { formatEtb } from "@/lib/format";
 import { productImage } from "@/lib/product-images";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { ProductMediaGallery } from "@/components/ProductMediaGallery";
 
 export const Route = createFileRoute("/product/$slug")({
   head: () => ({
@@ -30,13 +31,14 @@ function ProductPage() {
   const [variantId, setVariantId] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
+  const requestKeyRef = useRef<string | null>(null);
 
   const { data: p, isLoading } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, product_variants(id, label, price_delta_etb_cents, is_available, sort_order)")
+        .select("*, product_variants(id, label, price_delta_etb_cents, is_available, sort_order, inventory_limit, inventory_committed)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -46,7 +48,9 @@ function ProductPage() {
 
   const variants = [...(p?.product_variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
   useEffect(() => {
-    if (!variantId && variants.length) setVariantId(variants.find((v) => v.is_available)?.id ?? null);
+    if (!variantId && variants.length) setVariantId(variants.find((variant) =>
+      variant.is_available && (variant.inventory_limit === null || variant.inventory_committed < variant.inventory_limit),
+    )?.id ?? null);
   }, [variants, variantId]);
 
   if (isLoading) return <div className="mx-auto max-w-7xl px-4 py-12 md:px-8"><Skeleton className="h-[600px] w-full" /></div>;
@@ -57,25 +61,46 @@ function ProductPage() {
   const unit = p.price_etb_cents + (v?.price_delta_etb_cents ?? 0);
   const subtotal = unit * qty;
   const deposit = Math.floor((subtotal * p.deposit_percent) / 100);
+  const remaining = !v || v.inventory_limit === null
+    ? null
+    : Math.max(0, v.inventory_limit - v.inventory_committed);
+  const maxQuantity = remaining === null ? 10 : Math.min(10, Math.max(1, remaining));
+  const fallbackImage = productImage({ ...p, image_url: p.listing_type === "seller" ? null : p.image_url });
 
   const reserve = async () => {
     if (!user) { navigate({ to: "/auth", search: { next: `/product/${slug}` } }); return; }
     if (!variantId) return;
     setBusy(true);
-    const { data, error } = await supabase.rpc("reserve_order", { _variant_id: variantId, _quantity: qty });
+    const storageKey = `shanta-order-request:${user.id}:${p.id}`;
+    const requestKey = requestKeyRef.current ?? sessionStorage.getItem(storageKey) ?? crypto.randomUUID();
+    requestKeyRef.current = requestKey;
+    sessionStorage.setItem(storageKey, requestKey);
+    const { data, error } = p.listing_type === "seller"
+      ? await supabase.rpc("reserve_seller_order", { _variant_id: variantId, _quantity: qty, _request_key: requestKey })
+      : await supabase.rpc("reserve_sourcing_order", { _variant_id: variantId, _quantity: qty, _request_key: requestKey });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Reservation created");
+    sessionStorage.removeItem(storageKey);
+    requestKeyRef.current = null;
+    toast.success(p.listing_type === "seller" ? "Preorder created" : "Reservation created");
     navigate({ to: "/account/orders/$id", params: { id: data as string } });
+  };
+
+  const resetRequestKey = () => {
+    requestKeyRef.current = null;
+    if (user && p) sessionStorage.removeItem(`shanta-order-request:${user.id}:${p.id}`);
   };
 
   return (
     <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-12 md:px-8">
       <div className="md:col-span-7">
-        <img src={productImage(p)} alt={p.name} width={1024} height={1280} className="aspect-[4/5] w-full rounded-md object-cover" />
+        <ProductMediaGallery productId={p.id} productSlug={p.slug} productName={p.name} variantId={variantId} fallback={fallbackImage} />
       </div>
       <div className="md:col-span-5 md:pt-6">
         <p className="text-xs uppercase tracking-widest text-muted-foreground">{p.brand}</p>
+        <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-primary">
+          {p.listing_type === "seller" ? "Seller listing" : "Dubai sourcing"}
+        </p>
         <h1 className="mt-2 text-3xl font-extrabold md:text-4xl">{p.name}</h1>
         <p className="tabular mt-4 text-2xl font-semibold">{formatEtb(unit)}</p>
         <p className="mt-6 text-muted-foreground">{p.description}</p>
@@ -87,8 +112,8 @@ function ProductPage() {
               {variants.map((x) => (
                 <button
                   key={x.id}
-                  disabled={!x.is_available}
-                  onClick={() => setVariantId(x.id)}
+                  disabled={!x.is_available || (x.inventory_limit !== null && x.inventory_committed >= x.inventory_limit)}
+                  onClick={() => { resetRequestKey(); setVariantId(x.id); setQty(1); }}
                   className={cn(
                     "min-h-11 rounded-md border px-4 text-sm transition-colors disabled:opacity-40",
                     variantId === x.id ? "border-ink bg-ink text-ink-foreground" : "hover:bg-sand",
@@ -101,12 +126,18 @@ function ProductPage() {
           </div>
         )}
 
+        {p.listing_type === "seller" && remaining !== null && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {remaining === 0 ? "This option has reached its preorder limit." : `${remaining} available for preorder`}
+          </p>
+        )}
+
         <div className="mt-6">
           <p className="mb-3 text-sm font-medium">Quantity</p>
           <div className="inline-flex items-center rounded-md border">
-            <button className="p-3" aria-label="Decrease" onClick={() => setQty((q) => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></button>
+            <button className="p-3" aria-label="Decrease" onClick={() => { resetRequestKey(); setQty((q) => Math.max(1, q - 1)); }}><Minus className="h-4 w-4" /></button>
             <span className="tabular w-10 text-center">{qty}</span>
-            <button className="p-3" aria-label="Increase" onClick={() => setQty((q) => Math.min(10, q + 1))}><Plus className="h-4 w-4" /></button>
+            <button className="p-3" aria-label="Increase" disabled={qty >= maxQuantity} onClick={() => { resetRequestKey(); setQty((q) => Math.min(maxQuantity, q + 1)); }}><Plus className="h-4 w-4" /></button>
           </div>
         </div>
 
@@ -117,10 +148,14 @@ function ProductPage() {
           <p className="pt-2 text-xs text-muted-foreground">Estimated delivery ~{p.delivery_days} days after a partner is assigned.</p>
         </div>
 
-        <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId} onClick={reserve}>
-          {busy ? "Reserving…" : user ? "Reserve order" : "Sign in to reserve"}
+        <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId || (p.listing_type === "seller" && remaining === 0)} onClick={reserve}>
+          {busy ? "Creating order…" : p.listing_type === "seller" ? user ? "Create preorder (deposit due)" : "Sign in to preorder" : user ? "Reserve order" : "Sign in to reserve"}
         </Button>
-        <p className="mt-3 text-center text-xs text-muted-foreground">Deposit payment will be available soon. Your reservation is saved now.</p>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          {p.listing_type === "seller"
+            ? "This creates an order and records the listed price and deposit. Online deposit collection is coming in the payment stage."
+            : "Deposit payment will be available soon. Your reservation is saved now."}
+        </p>
       </div>
     </div>
   );

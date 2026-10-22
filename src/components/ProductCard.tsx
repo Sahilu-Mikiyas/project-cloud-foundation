@@ -10,6 +10,7 @@ export type ProductRow = {
   image_url: string | null;
   price_etb_cents: number;
   delivery_days: number;
+  listing_type?: "sourcing" | "seller";
 };
 
 export function ProductCard({ p, index = 0 }: { p: ProductRow; index?: number }) {
@@ -22,7 +23,7 @@ export function ProductCard({ p, index = 0 }: { p: ProductRow; index?: number })
     >
       <div className="aspect-[4/5] overflow-hidden rounded-md bg-sand">
         <img
-          src={productImage(p)}
+          src={productImage({ ...p, image_url: p.listing_type === "seller" ? null : p.image_url })}
           alt={p.name}
           loading="lazy"
           width={1024}
@@ -31,6 +32,9 @@ export function ProductCard({ p, index = 0 }: { p: ProductRow; index?: number })
         />
       </div>
       <div className="mt-3 space-y-0.5">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+          {p.listing_type === "seller" ? "Seller listing" : "Dubai sourcing"}
+        </p>
         <p className="text-xs uppercase tracking-widest text-muted-foreground">{p.brand}</p>
         <h3 className="text-base font-semibold">{p.name}</h3>
         <p className="tabular text-sm">{formatEtb(p.price_etb_cents)}</p>

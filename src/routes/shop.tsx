@@ -10,9 +10,9 @@ export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
       { title: "Shop — Shanta" },
-      { name: "description", content: "Browse fragrance, electronics, fashion and watches sourced from Dubai." },
+      { name: "description", content: "Browse seller listings and Dubai sourcing products with transparent ETB prices." },
       { property: "og:title", content: "Shop — Shanta" },
-      { property: "og:description", content: "Browse products sourced from Dubai with transparent ETB prices." },
+      { property: "og:description", content: "Shop seller listings or products sourced from Dubai through Shanta." },
     ],
   }),
   component: Shop,
@@ -20,15 +20,17 @@ export const Route = createFileRoute("/shop")({
 
 function Shop() {
   const [cat, setCat] = useState<string | null>(null);
+  const [source, setSource] = useState<"all" | "sourcing" | "seller">("all");
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => (await supabase.from("categories").select("id, slug, name").order("sort_order")).data ?? [],
   });
   const { data: products, isLoading } = useQuery({
-    queryKey: ["products", "list", cat],
+    queryKey: ["products", "list", cat, source],
     queryFn: async () => {
-      let q = supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, delivery_days").eq("is_published", true);
+      let q = supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, delivery_days, listing_type").eq("is_published", true);
       if (cat) q = q.eq("category_id", cat);
+      if (source !== "all") q = q.eq("listing_type", source);
       const { data, error } = await q.order("name");
       if (error) throw error;
       return data;
@@ -45,6 +47,13 @@ function Shop() {
         <button className={chip(cat === null)} onClick={() => setCat(null)}>All</button>
         {categories.map((c) => (
           <button key={c.id} className={chip(cat === c.id)} onClick={() => setCat(c.id)}>{c.name}</button>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2" aria-label="Listing type">
+        {(["all", "sourcing", "seller"] as const).map((value) => (
+          <button key={value} className={chip(source === value)} onClick={() => setSource(value)}>
+            {{ all: "All listings", sourcing: "Dubai sourcing", seller: "Seller listings" }[value]}
+          </button>
         ))}
       </div>
       <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-6">
