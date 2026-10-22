@@ -57,6 +57,13 @@
       "when": 1792671200000,
       "tag": "0007_in_app_order_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792671600000,
+      "tag": "0008_order_support_and_unpaid_cancellation",
+      "breakpoints": true
     }
   ]
 }

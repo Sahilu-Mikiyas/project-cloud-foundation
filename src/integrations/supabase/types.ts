@@ -307,6 +307,75 @@ export type Database = {
           },
         ]
       }
+      support_cases: {
+        Row: {
+          category: "order_status" | "listing_or_product" | "seller_communication" | "other"
+          created_at: string
+          id: string
+          opened_by: string
+          order_id: string
+          status: Database["public"]["Enums"]["support_case_status"]
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          category: "order_status" | "listing_or_product" | "seller_communication" | "other"
+          created_at?: string
+          id?: string
+          opened_by: string
+          order_id: string
+          status?: Database["public"]["Enums"]["support_case_status"]
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          category?: "order_status" | "listing_or_product" | "seller_communication" | "other"
+          created_at?: string
+          id?: string
+          opened_by?: string
+          order_id?: string
+          status?: Database["public"]["Enums"]["support_case_status"]
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_cases_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_case_messages: {
+        Row: { body: string; case_id: string; created_at: string; id: string; sender_id: string }
+        Insert: { body: string; case_id: string; created_at?: string; id?: string; sender_id: string }
+        Update: { body?: string; case_id?: string; created_at?: string; id?: string; sender_id?: string }
+        Relationships: [
+          {
+            foreignKeyName: "support_case_messages_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "support_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_case_events: {
+        Row: { actor_id: string | null; case_id: string; created_at: string; id: string; note: string; status: Database["public"]["Enums"]["support_case_status"] }
+        Insert: { actor_id?: string | null; case_id: string; created_at?: string; id?: string; note: string; status: Database["public"]["Enums"]["support_case_status"] }
+        Update: { actor_id?: string | null; case_id?: string; created_at?: string; id?: string; note?: string; status?: Database["public"]["Enums"]["support_case_status"] }
+        Relationships: [
+          {
+            foreignKeyName: "support_case_events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "support_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
           id: string
@@ -540,6 +609,22 @@ export type Database = {
         }
         Returns: undefined
       }
+      cancel_unpaid_order: {
+        Args: { _order_id: string; _reason: string }
+        Returns: undefined
+      }
+      create_order_support_case: {
+        Args: { _category: string; _message: string; _order_id: string; _subject: string }
+        Returns: string
+      }
+      reply_to_order_support_case: {
+        Args: { _body: string; _case_id: string }
+        Returns: string
+      }
+      admin_set_support_case_status: {
+        Args: { _case_id: string; _note: string; _status: Database["public"]["Enums"]["support_case_status"] }
+        Returns: undefined
+      }
       create_seller_listing: {
         Args: {
           _brand: string
@@ -618,6 +703,7 @@ export type Database = {
         | "failed"
         | "cancelled"
         | "expired"
+      support_case_status: "open" | "in_progress" | "waiting_on_customer" | "resolved" | "closed"
       supplier_status: "pending" | "verified" | "rejected" | "suspended"
     }
     CompositeTypes: {
@@ -774,6 +860,7 @@ export const Constants = {
         "cancelled",
         "expired",
       ],
+      support_case_status: ["open", "in_progress", "waiting_on_customer", "resolved", "closed"],
       supplier_status: ["pending", "verified", "rejected", "suspended"],
     },
   },
