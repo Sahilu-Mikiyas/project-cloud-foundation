@@ -36,6 +36,13 @@
       "when": 1792670000000,
       "tag": "0004_payment_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792670400000,
+      "tag": "0005_seller_order_response",
+      "breakpoints": true
     }
   ]
 }

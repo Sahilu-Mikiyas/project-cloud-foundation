@@ -235,7 +235,7 @@ function SellerListings({ userId }: { userId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, reference, status, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)")
+        .select("id, reference, status, seller_response, seller_responded_at, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)")
         .eq("seller_id", userId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -297,6 +297,18 @@ function SellerListings({ userId }: { userId: string }) {
     qc.invalidateQueries({ queryKey: ["products"] });
   };
 
+  const respondToOrder = async (orderId: string, response: "accepted" | "declined") => {
+    const { error } = await supabase.rpc("seller_respond_to_order", {
+      _order_id: orderId,
+      _response: response,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(response === "accepted" ? "Preorder availability confirmed" : "Preorder declined and cancelled");
+    qc.invalidateQueries({ queryKey: ["seller-orders", userId] });
+    qc.invalidateQueries({ queryKey: ["order"] });
+    qc.invalidateQueries({ queryKey: ["my-orders", userId] });
+  };
+
   return (
     <div className="mt-6 border-t pt-6">
       <h3 className="font-semibold">Your product listings</h3>
@@ -355,7 +367,7 @@ function SellerListings({ userId }: { userId: string }) {
       </div>
       <section className="mt-8">
         <h4 className="font-semibold">Orders for your listings</h4>
-        <p className="mt-1 text-sm text-muted-foreground">New preorders appear here with their deposit status. Customer contact details are not shown in this view.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Confirm whether you can fulfill a preorder at its listed terms. Acceptance does not mean the deposit was paid or that fulfillment has started. Customer contact details are not shown here.</p>
         <div className="mt-4 divide-y rounded-md border bg-background">
           {sellerOrders.length === 0 && <p className="p-5 text-sm text-muted-foreground">No preorders yet.</p>}
           {sellerOrders.map((order) => (
@@ -364,10 +376,19 @@ function SellerListings({ userId }: { userId: string }) {
                 <p className="tabular text-xs text-muted-foreground">{order.reference} · {new Date(order.created_at).toLocaleDateString()}</p>
                 <p className="font-medium">{order.order_items.map((item) => `${item.product_name} (${item.variant_label}) × ${item.quantity}`).join(", ")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Deposit due: {formatEtb(order.deposit_etb_cents)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Seller response: {order.seller_response === "accepted" ? "Availability confirmed" : order.seller_response === "declined" ? "Declined" : "Waiting for your response"}
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="tabular text-sm">{formatEtb(order.subtotal_etb_cents)}</span>
                 <StatusBadge status={order.status} />
+                {order.seller_response === "pending" && order.status === "awaiting_customer_deposit" && (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => respondToOrder(order.id, "declined")}>Decline</Button>
+                    <Button size="sm" onClick={() => respondToOrder(order.id, "accepted")}>Accept preorder</Button>
+                  </>
+                )}
               </div>
             </div>
           ))}

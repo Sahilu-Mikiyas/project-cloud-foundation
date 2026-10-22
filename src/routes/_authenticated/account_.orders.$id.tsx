@@ -26,7 +26,7 @@ function OrderDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, reference, order_type, seller_id, status, subtotal_etb_cents, deposit_etb_cents, created_at, updated_at, order_items(*), order_events(id, status, note, created_at)")
+        .select("id, reference, order_type, seller_id, seller_response, seller_responded_at, status, subtotal_etb_cents, deposit_etb_cents, created_at, updated_at, order_items(*), order_events(id, status, note, created_at)")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -72,6 +72,16 @@ function OrderDetail() {
                 {o.order_type === "seller_listing"
                   ? "Deposit not yet paid. This preorder records the listing price and deposit due; online payment will be added in the payment stage."
                   : "Deposit not yet paid. Online deposit payment is coming soon — our team will contact you to confirm."}
+              </p>
+            )}
+            {o.order_type === "seller_listing" && o.seller_response === "accepted" && (
+              <p className="mt-3 rounded bg-muted p-3 text-xs text-muted-foreground">
+                The seller confirmed availability at the listed terms. The deposit is still pending, so preparation and delivery have not started.
+              </p>
+            )}
+            {o.order_type === "seller_listing" && o.seller_response === "declined" && (
+              <p className="mt-3 rounded bg-muted p-3 text-xs text-muted-foreground">
+                The seller could not accept this preorder. It has been cancelled; no deposit was collected.
               </p>
             )}
           </div>
