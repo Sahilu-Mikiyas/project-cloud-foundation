@@ -114,13 +114,16 @@ collection stays on hold until Shanta selects a gateway.
 - Paid-order refunds and financial dispute resolution remain deferred until
   payment and refund provider workflows exist.
 
-## Stage 10 — Operations tools
+## Stage 10 — Operations tools (implemented)
 
-- Add filters and queues for pending seller decisions, stalled fulfillment,
-  suspended sellers, cancellations and support cases.
-- Keep administrative status changes constrained to valid operational actions;
-  payment statuses must come from verified payment processing.
-- Provide an audit trail and safe reason fields for every privileged action.
+- Add operations queues for pending seller decisions, fulfillment orders older
+  than seven days, suspended sellers, cancellations and open support cases.
+- Add a recent admin-action queue with actor time, entity, action and reason.
+- Require a reason for privileged case, order, seller and supplier actions and
+  persist the reason in the audit log.
+- Restrict manual order status changes to cancellation or expiry from eligible
+  unpaid or unfulfilled states. Payment and dispute statuses remain controlled
+  by their verified workflows.
 
 ## Stage 11 — Listing quality and media
 

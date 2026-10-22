@@ -64,6 +64,13 @@
       "when": 1792671600000,
       "tag": "0008_order_support_and_unpaid_cancellation",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792672000000,
+      "tag": "0009_operations_queues_and_audit",
+      "breakpoints": true
     }
   ]
 }
