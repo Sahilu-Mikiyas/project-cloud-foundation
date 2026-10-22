@@ -23,7 +23,7 @@ export function ProductCard({ p, index = 0 }: { p: ProductRow; index?: number })
     >
       <div className="aspect-[4/5] overflow-hidden rounded-md bg-sand">
         <img
-          src={productImage(p)}
+          src={productImage({ ...p, image_url: p.listing_type === "seller" ? null : p.image_url })}
           alt={p.name}
           loading="lazy"
           width={1024}

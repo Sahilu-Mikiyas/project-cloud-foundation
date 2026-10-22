@@ -10,6 +10,7 @@ import { formatEtb } from "@/lib/format";
 import { productImage } from "@/lib/product-images";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { ProductMediaGallery } from "@/components/ProductMediaGallery";
 
 export const Route = createFileRoute("/product/$slug")({
   head: () => ({
@@ -64,6 +65,7 @@ function ProductPage() {
     ? null
     : Math.max(0, v.inventory_limit - v.inventory_committed);
   const maxQuantity = remaining === null ? 10 : Math.min(10, Math.max(1, remaining));
+  const fallbackImage = productImage({ ...p, image_url: p.listing_type === "seller" ? null : p.image_url });
 
   const reserve = async () => {
     if (!user) { navigate({ to: "/auth", search: { next: `/product/${slug}` } }); return; }
@@ -92,7 +94,7 @@ function ProductPage() {
   return (
     <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-12 md:px-8">
       <div className="md:col-span-7">
-        <img src={productImage(p)} alt={p.name} width={1024} height={1280} className="aspect-[4/5] w-full rounded-md object-cover" />
+        <ProductMediaGallery productId={p.id} productSlug={p.slug} productName={p.name} variantId={variantId} fallback={fallbackImage} />
       </div>
       <div className="md:col-span-5 md:pt-6">
         <p className="text-xs uppercase tracking-widest text-muted-foreground">{p.brand}</p>

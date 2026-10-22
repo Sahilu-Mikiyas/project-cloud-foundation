@@ -71,6 +71,13 @@
       "when": 1792672000000,
       "tag": "0009_operations_queues_and_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792672400000,
+      "tag": "0010_listing_media_moderation",
+      "breakpoints": true
     }
   ]
 }

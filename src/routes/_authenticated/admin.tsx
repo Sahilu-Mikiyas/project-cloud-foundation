@@ -41,6 +41,7 @@ function Admin() {
           <TabsTrigger value="partners">Partners</TabsTrigger>
           <TabsTrigger value="sellers">Sellers</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
+          <TabsTrigger value="media">Media review</TabsTrigger>
         </TabsList>
         <TabsContent value="operations"><OperationsQueue /></TabsContent>
         <TabsContent value="orders"><Orders /></TabsContent>
@@ -48,6 +49,7 @@ function Admin() {
         <TabsContent value="partners"><Partners /></TabsContent>
         <TabsContent value="sellers"><Sellers /></TabsContent>
         <TabsContent value="support"><SupportCases /></TabsContent>
+        <TabsContent value="media"><MediaModeration /></TabsContent>
       </Tabs>
     </div>
   );
@@ -122,6 +124,66 @@ function OperationsQueue() {
         {!loading && queue === "support" && (supportCases.length ? supportCases.map((c) => <div key={c.id} className="flex items-center justify-between gap-4 p-4"><div><Link to="/account/orders/$id" params={{ id: c.order_id }} className="font-medium underline">{c.subject}</Link><p className="text-xs text-muted-foreground">{c.orders?.reference ?? "Order"} · {c.status.replaceAll("_", " ")}</p></div><span className="text-sm text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</span></div>) : <p className="p-5 text-sm text-muted-foreground">No open support cases.</p>)}
         {!loading && queue === "audit" && (audit.length ? audit.map((event) => <div key={event.id} className="flex flex-wrap items-start justify-between gap-3 p-4"><div><p className="font-medium">{event.action.replaceAll("_", " ")} · {event.entity_type.replaceAll("_", " ")}</p><p className="text-sm">{event.reason}</p><p className="text-xs text-muted-foreground">Admin {event.actor_id.slice(0, 8)} · Record {event.entity_id}</p></div><time className="text-xs text-muted-foreground">{new Date(event.created_at).toLocaleString()}</time></div>) : <p className="p-5 text-sm text-muted-foreground">No operational actions have been recorded.</p>)}
         {!loading && !(["suspended", "support", "audit"].includes(queue)) && (activeOrders.length ? activeOrders.map((o) => <div key={o.id} className="flex items-center justify-between gap-4 p-4"><div><p className="font-medium">{o.reference}</p><p className="text-xs text-muted-foreground">{o.status.replaceAll("_", " ")} · {o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing"}</p></div><div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</span><Link to="/account/orders/$id" params={{ id: o.id }} className="text-sm underline">View</Link></div></div>) : <p className="p-5 text-sm text-muted-foreground">Nothing in this queue.</p>)}
+      </div>
+    </section>
+  );
+}
+
+function MediaModeration() {
+  const qc = useQueryClient();
+  const { data: media = [], isLoading } = useQuery({
+    queryKey: ["admin-listing-media-review"],
+    queryFn: async () => {
+      const [{ data: pending, error: pendingError }, { data: reports, error: reportError }] = await Promise.all([
+        supabase.from("product_media").select("id, product_id, object_path, alt_text, moderation_status, moderation_note, created_at, products(name), product_variants(label)").eq("moderation_status", "pending").order("created_at", { ascending: true }),
+        supabase.from("product_media_reports").select("id, media_id, reason, created_at").eq("status", "open").order("created_at", { ascending: true }),
+      ]);
+      if (pendingError) throw pendingError;
+      if (reportError) throw reportError;
+      const reportedIds = [...new Set((reports ?? []).map((report) => report.media_id))];
+      const { data: reported, error: reportedError } = reportedIds.length
+        ? await supabase.from("product_media").select("id, product_id, object_path, alt_text, moderation_status, moderation_note, created_at, products(name), product_variants(label)").in("id", reportedIds)
+        : { data: [], error: null };
+      if (reportedError) throw reportedError;
+      const rows = new Map((pending ?? []).map((item) => [item.id, item]));
+      for (const item of reported ?? []) rows.set(item.id, item);
+      const signed = await Promise.all([...rows.values()].map(async (item) => {
+        const { data: urlData } = await supabase.storage.from("seller-listing-media").createSignedUrl(item.object_path, 5 * 60);
+        return urlData ? {
+          ...item,
+          url: urlData.signedUrl,
+          productName: item.products?.name ?? "Seller listing",
+          variantLabel: item.product_variants?.label ?? null,
+          reports: (reports ?? []).filter((report) => report.media_id === item.id),
+        } : null;
+      }));
+      return signed.filter((item) => item !== null);
+    },
+  });
+  const moderate = async (id: string, status: "approved" | "rejected") => {
+    const note = window.prompt(`Reason for marking this image ${status}:`)?.trim();
+    if (!note) return;
+    const { error } = await supabase.rpc("admin_review_product_media", { _media_id: id, _status: status, _note: note });
+    if (error) { toast.error(error.message); return; }
+    toast.success(status === "approved" ? "Image approved" : "Image rejected and hidden");
+    qc.invalidateQueries({ queryKey: ["admin-listing-media-review"] });
+    qc.invalidateQueries({ queryKey: ["approved-product-media"] });
+    qc.invalidateQueries({ queryKey: ["operations-audit"] });
+  };
+  return (
+    <section className="mt-4 space-y-4">
+      <div><h2 className="text-lg font-bold">Listing image review</h2><p className="text-sm text-muted-foreground">Images remain private until approved. Reported approved images appear here for review and can be taken down.</p></div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {isLoading && <p className="text-sm text-muted-foreground">Loading images…</p>}
+        {!isLoading && media.length === 0 && <p className="text-sm text-muted-foreground">No images need review.</p>}
+        {media.map((item) => (
+          <article key={item.id} className="space-y-3 rounded-md border bg-card p-4">
+            <img src={item.url} alt={item.alt_text} className="aspect-square w-full rounded object-cover" />
+            <div><p className="font-semibold">{item.productName}</p><p className="text-sm">{item.alt_text}</p><p className="text-xs text-muted-foreground">{item.variantLabel ? `Option: ${item.variantLabel}` : "All options"} · {item.moderation_status}</p></div>
+            {item.reports.length > 0 && <div className="space-y-1 rounded bg-muted p-3"><p className="text-xs font-semibold">Open reports</p>{item.reports.map((report) => <p key={report.id} className="text-xs">{report.reason}</p>)}</div>}
+            <div className="flex gap-2"><Button type="button" size="sm" onClick={() => moderate(item.id, "approved")}>Approve</Button><Button type="button" size="sm" variant="outline" onClick={() => moderate(item.id, "rejected")}>Reject / take down</Button></div>
+          </article>
+        ))}
       </div>
     </section>
   );
