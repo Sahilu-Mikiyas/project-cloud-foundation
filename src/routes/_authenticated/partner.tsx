@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatEtb } from "@/lib/format";
+import { SellerListingMediaManager } from "@/components/SellerListingMediaManager";
 
 export const Route = createFileRoute("/_authenticated/partner")({
   head: () => ({
@@ -191,7 +192,6 @@ type ListingForm = {
   name: string;
   brand: string;
   description: string;
-  image_url: string;
   price: string;
   deposit_percent: string;
   delivery_days: string;
@@ -200,7 +200,7 @@ type ListingForm = {
 };
 
 const emptyListing: ListingForm = {
-  name: "", brand: "", description: "", image_url: "", price: "", deposit_percent: "30", delivery_days: "7", category_id: "", variants: "Standard",
+  name: "", brand: "", description: "", price: "", deposit_percent: "30", delivery_days: "7", category_id: "", variants: "Standard",
 };
 
 function SellerListings({ userId }: { userId: string }) {
@@ -223,7 +223,7 @@ function SellerListings({ userId }: { userId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, brand, price_etb_cents, deposit_percent, is_published, product_variants(id, label, inventory_limit, inventory_committed)")
+        .select("id, name, brand, description, delivery_days, price_etb_cents, deposit_percent, is_published, product_variants(id, label, inventory_limit, inventory_committed)")
         .eq("seller_user_id", userId)
         .eq("listing_type", "seller")
         .order("created_at", { ascending: false });
@@ -263,7 +263,7 @@ function SellerListings({ userId }: { userId: string }) {
       _slug: slug,
       _brand: form.brand,
       _description: form.description,
-      _image_url: form.image_url,
+      _image_url: "",
       _price_etb_cents: priceCents,
       _deposit_percent: depositPercent,
       _delivery_days: deliveryDays,
@@ -331,12 +331,11 @@ function SellerListings({ userId }: { userId: string }) {
   return (
     <div className="mt-6 border-t pt-6">
       <h3 className="font-semibold">Your product listings</h3>
-      <p className="mt-1 text-sm text-muted-foreground">Create a draft, choose its price and deposit, then publish it when ready. Images currently use an image URL.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Create a draft, choose its price and deposit, add listing details, then upload images for review before publishing.</p>
       <form onSubmit={createListing} className="mt-5 grid gap-3 rounded-md border bg-background p-4 md:grid-cols-2">
         <Field id="listing-name" label="Product name" required value={form.name} onChange={(name) => setForm({ ...form, name })} />
         <Field id="listing-brand" label="Brand (optional)" value={form.brand} onChange={(brand) => setForm({ ...form, brand })} />
         <Field id="listing-price" label="Price (ETB)" required value={form.price} onChange={(price) => setForm({ ...form, price })} />
-        <Field id="listing-image" label="Product image URL" value={form.image_url} onChange={(image_url) => setForm({ ...form, image_url })} />
         <Field id="listing-deposit" label="Deposit percentage (1–100)" value={form.deposit_percent} onChange={(deposit_percent) => setForm({ ...form, deposit_percent })} />
         <Field id="listing-delivery" label="Estimated delivery days" value={form.delivery_days} onChange={(delivery_days) => setForm({ ...form, delivery_days })} />
         <div className="space-y-1.5">
@@ -349,14 +348,17 @@ function SellerListings({ userId }: { userId: string }) {
         <Field id="listing-variants" label="Options (comma separated)" value={form.variants} onChange={(variants) => setForm({ ...form, variants })} />
         <div className="space-y-1.5 md:col-span-2">
           <Label htmlFor="listing-description">Description</Label>
-          <Textarea id="listing-description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <Textarea id="listing-description" maxLength={3000} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <p className="text-right text-xs text-muted-foreground">{form.description.length}/3000</p>
         </div>
+        <div className="rounded-md border bg-muted/40 p-4 md:col-span-2"><p className="text-xs uppercase tracking-wide text-muted-foreground">Customer preview</p><p className="mt-2 font-semibold">{form.name || "Your product name"}</p><p className="mt-1 text-xs text-muted-foreground">{form.brand || "Brand"} · {form.delivery_days || "—"} day delivery estimate</p><p className="mt-2 text-sm text-muted-foreground">{form.description || "Add a clear description of the product and its condition."}</p></div>
         <Button type="submit" className="h-11 md:col-span-2" disabled={saving}>{saving ? "Saving…" : "Save listing draft"}</Button>
       </form>
       <div className="mt-5 divide-y rounded-md border bg-background">
         {listings.length === 0 && <p className="p-5 text-sm text-muted-foreground">You have no listings yet.</p>}
         {listings.map((listing) => (
-          <div key={listing.id} className="flex flex-wrap items-center gap-4 p-4">
+          <div key={listing.id} className="space-y-4 p-4">
+            <div className="flex flex-wrap items-center gap-4">
             <div className="min-w-0 flex-1">
               <p className="font-medium">{listing.name}</p>
               <p className="tabular text-sm text-muted-foreground">{formatEtb(listing.price_etb_cents)} · {listing.deposit_percent}% deposit · {listing.product_variants.length} options</p>
@@ -397,6 +399,8 @@ function SellerListings({ userId }: { userId: string }) {
               {listing.is_published ? "Published" : "Draft"}
               <Switch checked={listing.is_published} onCheckedChange={(checked) => toggleListing(listing.id, checked)} />
             </label>
+            </div>
+            <SellerListingMediaManager productId={listing.id} sellerId={userId} productName={listing.name} description={listing.description} deliveryDays={listing.delivery_days} variants={listing.product_variants.map(({ id, label }) => ({ id, label }))} />
           </div>
         ))}
       </div>

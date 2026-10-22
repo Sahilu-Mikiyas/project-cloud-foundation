@@ -591,10 +591,27 @@ export type Database = {
         Relationships: []
       }
       admin_action_events: {
-        Row: { action: string; actor_id: string; created_at: string; entity_id: string; entity_type: "order" | "seller" | "supplier" | "support_case"; id: string; reason: string }
-        Insert: { action: string; actor_id: string; created_at?: string; entity_id: string; entity_type: "order" | "seller" | "supplier" | "support_case"; id?: string; reason: string }
-        Update: { action?: string; actor_id?: string; created_at?: string; entity_id?: string; entity_type?: "order" | "seller" | "supplier" | "support_case"; id?: string; reason?: string }
+        Row: { action: string; actor_id: string; created_at: string; entity_id: string; entity_type: "order" | "seller" | "supplier" | "support_case" | "listing_media"; id: string; reason: string }
+        Insert: { action: string; actor_id: string; created_at?: string; entity_id: string; entity_type: "order" | "seller" | "supplier" | "support_case" | "listing_media"; id?: string; reason: string }
+        Update: { action?: string; actor_id?: string; created_at?: string; entity_id?: string; entity_type?: "order" | "seller" | "supplier" | "support_case" | "listing_media"; id?: string; reason?: string }
         Relationships: []
+      }
+      product_media: {
+        Row: { alt_text: string; created_at: string; id: string; moderation_note: string | null; moderation_status: Database["public"]["Enums"]["product_media_status"]; object_path: string; product_id: string; reviewed_at: string | null; reviewed_by: string | null; seller_user_id: string; sort_order: number; variant_id: string | null }
+        Insert: { alt_text: string; created_at?: string; id?: string; moderation_note?: string | null; moderation_status?: Database["public"]["Enums"]["product_media_status"]; object_path: string; product_id: string; reviewed_at?: string | null; reviewed_by?: string | null; seller_user_id: string; sort_order?: number; variant_id?: string | null }
+        Update: { alt_text?: string; created_at?: string; id?: string; moderation_note?: string | null; moderation_status?: Database["public"]["Enums"]["product_media_status"]; object_path?: string; product_id?: string; reviewed_at?: string | null; reviewed_by?: string | null; seller_user_id?: string; sort_order?: number; variant_id?: string | null }
+        Relationships: [
+          { foreignKeyName: "product_media_product_id_fkey"; columns: ["product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["id"] },
+          { foreignKeyName: "product_media_variant_id_fkey"; columns: ["variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["id"] },
+        ]
+      }
+      product_media_reports: {
+        Row: { created_at: string; id: string; media_id: string; reason: string; reporter_id: string; resolved_at: string | null; status: string }
+        Insert: { created_at?: string; id?: string; media_id: string; reason: string; reporter_id: string; resolved_at?: string | null; status?: string }
+        Update: { created_at?: string; id?: string; media_id?: string; reason?: string; reporter_id?: string; resolved_at?: string | null; status?: string }
+        Relationships: [
+          { foreignKeyName: "product_media_reports_media_id_fkey"; columns: ["media_id"]; isOneToOne: false; referencedRelation: "product_media"; referencedColumns: ["id"] },
+        ]
       }
     }
     Views: {
@@ -615,6 +632,14 @@ export type Database = {
           _seller_id: string
           _status: Database["public"]["Enums"]["seller_status"]
         }
+        Returns: undefined
+      }
+      report_product_media: {
+        Args: { _media_id: string; _reason: string }
+        Returns: string
+      }
+      admin_review_product_media: {
+        Args: { _media_id: string; _note: string; _status: Database["public"]["Enums"]["product_media_status"] }
         Returns: undefined
       }
       cancel_unpaid_order: {
@@ -713,6 +738,7 @@ export type Database = {
         | "expired"
       support_case_status: "open" | "in_progress" | "waiting_on_customer" | "resolved" | "closed"
       supplier_status: "pending" | "verified" | "rejected" | "suspended"
+      product_media_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -870,6 +896,7 @@ export const Constants = {
       ],
       support_case_status: ["open", "in_progress", "waiting_on_customer", "resolved", "closed"],
       supplier_status: ["pending", "verified", "rejected", "suspended"],
+      product_media_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
