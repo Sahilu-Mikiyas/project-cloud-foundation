@@ -68,6 +68,12 @@ Every shopper-facing product and journey should make these distinctions clear:
   listings, responsive product cards, loading/error/empty states and result
   counts. Filters remain composable.
 - Preserve existing database queries, links, and order-creation behavior.
+- Apply the visual system consistently to sign-in, order history, order detail,
+  seller/partner workspace, and operations: Fraunces display type, restrained
+  gold accents, generous spacing, rounded cards, and responsive navigation.
+- Add restrained entrance and in-view motion, image drift, card hover feedback,
+  and menu transitions. Respect reduced-motion preferences and preserve usable
+  content when IntersectionObserver is unavailable.
 
 ### R2 — Product detail and preorder decision
 

@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { formatEtb, ORDER_FLOW, ORDER_STATUS_LABEL, SELLER_ORDER_FLOW } from "@/lib/format";
 import { productImage } from "@/lib/product-images";
 import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/Reveal";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -116,17 +117,18 @@ function OrderDetail() {
   const events = [...o.order_events].sort((a, b) => a.created_at.localeCompare(b.created_at));
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 md:px-8">
-      <Link to="/account" className="text-sm text-muted-foreground hover:underline">← My orders</Link>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="tabular text-3xl font-extrabold">{o.reference}</h1>
-        <StatusBadge status={o.status} />
+    <div className="workspace-page mx-auto max-w-6xl px-4 py-10 md:px-8 md:py-14">
+      <Link to="/account" className="text-sm text-muted-foreground transition-colors hover:text-foreground">← My orders</Link>
+      <Reveal>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-[2rem] bg-foreground p-6 text-background shadow-elevated sm:p-9">
+        <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold">{o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing reservation"}</p><h1 className="tabular mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">{o.reference}</h1><p className="mt-2 text-sm text-background/60">Placed {new Date(o.created_at).toLocaleDateString()}</p></div>
+        <div className="rounded-full border border-white/15 bg-white/5 px-3 py-2"><StatusBadge status={o.status} /></div>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">{o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing reservation"}</p>
+      </Reveal>
 
       {isBuyer && o.status === "awaiting_customer_deposit" && (
-        <section className="mt-6 rounded-md border border-destructive/30 bg-card p-4">
-          <h2 className="font-semibold">Cancel this unpaid order</h2>
+        <section className="mt-6 rounded-3xl border border-destructive/30 bg-card p-5 shadow-card sm:p-6">
+          <h2 className="font-display text-2xl">Cancel this unpaid order</h2>
           <p className="mt-1 text-sm text-muted-foreground">You can cancel while the deposit is still pending. This releases any reserved seller preorder capacity.</p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <Textarea aria-label="Cancellation reason" placeholder="Why are you cancelling?" value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} maxLength={500} />
@@ -138,8 +140,8 @@ function OrderDetail() {
       <div className="mt-10 grid gap-10 md:grid-cols-12">
         <div className="space-y-6 md:col-span-7">
           {o.order_items.map((i) => (
-            <div key={i.id} className="flex gap-4">
-              <img src={productImage({ image_url: i.image_url, slug: null })} alt="" className="h-28 w-24 rounded-md object-cover" />
+            <div key={i.id} className="flex gap-4 rounded-3xl border border-border bg-card p-4 shadow-card sm:p-5">
+              <img src={productImage({ image_url: i.image_url, slug: null })} alt="" className="h-28 w-24 rounded-2xl object-cover" />
               <div>
                 <p className="font-semibold">{i.product_name}</p>
                 <p className="text-sm text-muted-foreground">{i.variant_label} · Qty {i.quantity}</p>
@@ -148,7 +150,7 @@ function OrderDetail() {
             </div>
           ))}
 
-          <div className="rounded-md bg-card p-5 text-sm">
+          <div className="rounded-3xl border border-border bg-card p-5 text-sm shadow-card sm:p-6">
             <div className="flex justify-between"><span className="text-muted-foreground">Order total</span><span className="tabular">{formatEtb(o.subtotal_etb_cents)}</span></div>
             <div className="mt-2 flex justify-between font-semibold"><span>Reservation deposit</span><span className="tabular">{formatEtb(o.deposit_etb_cents)}</span></div>
             <div className="mt-2 flex justify-between"><span className="text-muted-foreground">Balance on handover</span><span className="tabular">{formatEtb(o.subtotal_etb_cents - o.deposit_etb_cents)}</span></div>
@@ -172,9 +174,9 @@ function OrderDetail() {
           </div>
         </div>
 
-        <div className="md:col-span-5">
-          <h2 className="text-lg font-bold">Progress</h2>
-          <ol className="mt-4 space-y-4">
+        <div className="rounded-3xl border border-border bg-card p-5 shadow-card md:col-span-5 sm:p-6">
+          <h2 className="font-display text-2xl">Order progress</h2>
+          <ol className="mt-5 space-y-5">
             {orderFlow.map((s, idx) => {
               const done = currentIdx >= 0 && idx < currentIdx;
               const current = idx === currentIdx;
@@ -200,8 +202,8 @@ function OrderDetail() {
         </div>
       </div>
 
-      <section className="mt-12 border-t pt-8">
-        <h2 className="text-xl font-bold">Order support</h2>
+      <section className="mt-12 border-t border-border pt-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Need a hand?</p><h2 className="mt-1 font-display text-3xl">Order support</h2>
         <p className="mt-1 text-sm text-muted-foreground">Messages are visible only to you, the seller for this order, and Shanta operations.</p>
 
         {isBuyer && !supportCases.some((supportCase) => ["open", "in_progress", "waiting_on_customer"].includes(supportCase.status)) && (

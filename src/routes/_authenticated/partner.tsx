@@ -13,6 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatEtb } from "@/lib/format";
 import { SellerListingMediaManager } from "@/components/SellerListingMediaManager";
+import { Reveal } from "@/components/Reveal";
+import { BadgeCheck, Store, Truck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/partner")({
   head: () => ({
@@ -90,14 +92,19 @@ function Partner() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 md:px-8">
-      <h1 className="text-3xl font-extrabold">Seller & partner portal</h1>
-      <p className="mt-2 max-w-2xl text-muted-foreground">
-        Sell products through your own published listings, source Dubai orders for Shanta customers, or do both. These are separate roles and order flows.
-      </p>
+    <div className="workspace-page mx-auto max-w-6xl px-4 py-10 md:px-8 md:py-14">
+      <Reveal>
+      <div className="relative overflow-hidden rounded-[2rem] bg-foreground p-6 text-background shadow-elevated sm:p-9 md:p-12">
+        <div className="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-gold/20 blur-3xl" aria-hidden />
+        <div className="relative max-w-3xl"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">Your Shanta workspace</p><h1 className="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Make your next move.</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-background/65">Build a local seller storefront, source Dubai orders for Shanta customers, or take part in both. Each channel keeps its own order flow and terms.</p>
+          <div className="mt-7 grid gap-3 sm:grid-cols-3"><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-gold text-foreground"><Store className="size-4" /></span><span className="text-xs font-medium">List local products</span></div><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-white/10"><BadgeCheck className="size-4" /></span><span className="text-xs font-medium">Set price and deposit</span></div><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-white/10"><Truck className="size-4" /></span><span className="text-xs font-medium">Source Dubai orders</span></div></div>
+        </div>
+      </div>
+      </Reveal>
 
-      <section className="mt-10 rounded-md border bg-card p-5 md:p-7">
-        <h2 className="text-xl font-bold">Sell your products</h2>
+      <Reveal delay={90}>
+      <section className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-card md:p-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">For local sellers</p><h2 className="mt-2 font-display text-3xl font-medium sm:text-4xl">Sell your products</h2>
         <p className="mt-1 text-sm text-muted-foreground">Apply to publish products, set your ETB price and deposit percentage, and manage your listings.</p>
         {!seller ? (
           <form className="mt-6 grid max-w-2xl gap-4 md:grid-cols-2" onSubmit={applySeller}>
@@ -112,7 +119,7 @@ function Partner() {
             </Button>
           </form>
         ) : (
-          <div className="mt-6 rounded-md bg-background p-4">
+          <div className="mt-6 rounded-2xl bg-secondary/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">{seller.business_name}</p>
@@ -127,9 +134,11 @@ function Partner() {
           </div>
         )}
       </section>
+      </Reveal>
 
-      <section className="mt-10 rounded-md border bg-card p-5 md:p-7">
-        <h2 className="text-xl font-bold">Source Dubai orders</h2>
+      <Reveal delay={140}>
+      <section className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-card md:p-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">For sourcing partners</p><h2 className="mt-2 font-display text-3xl font-medium sm:text-4xl">Source Dubai orders</h2>
         <p className="mt-1 text-sm text-muted-foreground">Verified Dubai partners can take sourcing assignments and commit a separate fee for each order.</p>
         {!supplier ? (
           <form className="mt-6 grid max-w-2xl gap-4 md:grid-cols-2" onSubmit={applySupplier}>
@@ -145,7 +154,7 @@ function Partner() {
             </Button>
           </form>
         ) : (
-          <div className="mt-6 rounded-md bg-background p-4">
+          <div className="mt-6 rounded-2xl bg-secondary/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">{supplier.business_name}</p>
@@ -175,6 +184,7 @@ function Partner() {
           </div>
         )}
       </section>
+      </Reveal>
     </div>
   );
 }

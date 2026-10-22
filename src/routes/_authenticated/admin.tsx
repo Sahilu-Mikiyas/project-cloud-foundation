@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatEtb, ORDER_STATUS_LABEL } from "@/lib/format";
 import { productImage } from "@/lib/product-images";
+import { Reveal } from "@/components/Reveal";
+import { Activity } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -31,17 +33,23 @@ function Admin() {
   if (loading) return <div className="mx-auto max-w-7xl px-4 py-12">Loading…</div>;
   if (!isAdmin) return <div className="mx-auto max-w-7xl px-4 py-24 text-center"><h1 className="text-2xl font-bold">Operations access only</h1><Link to="/" className="mt-4 inline-block underline">Go home</Link></div>;
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
-      <h1 className="text-3xl font-extrabold">Operations</h1>
+    <div className="workspace-page mx-auto max-w-7xl px-4 py-10 md:px-8 md:py-14">
+      <Reveal>
+      <div className="flex flex-col justify-between gap-5 rounded-[2rem] bg-foreground p-6 text-background shadow-elevated sm:flex-row sm:items-end sm:p-9 md:p-11">
+        <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">Shanta back office</p><h1 className="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Operations overview</h1><p className="mt-3 max-w-xl text-sm leading-6 text-background/65">Review orders, sellers, sourcing partners and support activity from one workspace.</p></div>
+        <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-xs text-background/70"><Activity className="size-4 text-gold" aria-hidden /> Live operations</div>
+      </div>
+      </Reveal>
+      <Reveal delay={100}>
       <Tabs defaultValue="orders" className="mt-6">
-        <TabsList>
-          <TabsTrigger value="operations">Operations</TabsTrigger>
-          <TabsTrigger value="orders">Orders</TabsTrigger>
-          <TabsTrigger value="catalog">Catalog</TabsTrigger>
-          <TabsTrigger value="partners">Partners</TabsTrigger>
-          <TabsTrigger value="sellers">Sellers</TabsTrigger>
-          <TabsTrigger value="support">Support</TabsTrigger>
-          <TabsTrigger value="media">Media review</TabsTrigger>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-2xl border border-border bg-card p-1.5 shadow-card">
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="operations">Queue</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="orders">Orders</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="catalog">Catalog</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="partners">Partners</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="sellers">Sellers</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="support">Support</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="media">Media review</TabsTrigger>
         </TabsList>
         <TabsContent value="operations"><OperationsQueue /></TabsContent>
         <TabsContent value="orders"><Orders /></TabsContent>
@@ -51,6 +59,7 @@ function Admin() {
         <TabsContent value="support"><SupportCases /></TabsContent>
         <TabsContent value="media"><MediaModeration /></TabsContent>
       </Tabs>
+      </Reveal>
     </div>
   );
 }

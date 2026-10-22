@@ -11,6 +11,7 @@ import { productImage } from "@/lib/product-images";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { ProductMediaGallery } from "@/components/ProductMediaGallery";
+import { Reveal } from "@/components/Reveal";
 
 export const Route = createFileRoute("/product/$slug")({
   head: () => ({
@@ -94,10 +95,10 @@ function ProductPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 pb-20 pt-6 md:px-8 md:pt-9">
       <Link to="/shop" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground">← Back to the collection</Link>
-      <div className="grid gap-8 md:grid-cols-12 md:gap-12">
+      <Reveal><div className="grid gap-8 md:grid-cols-12 md:gap-12">
       <div className="md:col-span-7">
         <ProductMediaGallery productId={p.id} productSlug={p.slug} productName={p.name} variantId={variantId} fallback={fallbackImage} />
-      </div>
+      </div></Reveal>
       <div className="md:col-span-5 md:pt-5">
         <div className="flex flex-wrap items-center gap-2">
         <p className="rounded-full bg-secondary px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground/75">
@@ -179,4 +180,3 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
     </div>
   );
 }
-
