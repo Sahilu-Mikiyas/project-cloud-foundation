@@ -590,6 +590,12 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_action_events: {
+        Row: { action: string; actor_id: string; created_at: string; entity_id: string; entity_type: "order" | "seller" | "supplier" | "support_case"; id: string; reason: string }
+        Insert: { action: string; actor_id: string; created_at?: string; entity_id: string; entity_type: "order" | "seller" | "supplier" | "support_case"; id?: string; reason: string }
+        Update: { action?: string; actor_id?: string; created_at?: string; entity_id?: string; entity_type?: "order" | "seller" | "supplier" | "support_case"; id?: string; reason?: string }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -597,6 +603,7 @@ export type Database = {
     Functions: {
       admin_review_supplier: {
         Args: {
+          _note: string
           _status: Database["public"]["Enums"]["supplier_status"]
           _supplier_id: string
         }
@@ -604,6 +611,7 @@ export type Database = {
       }
       admin_review_seller: {
         Args: {
+          _note: string
           _seller_id: string
           _status: Database["public"]["Enums"]["seller_status"]
         }
