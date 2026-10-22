@@ -38,10 +38,12 @@ function Admin() {
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="catalog">Catalog</TabsTrigger>
           <TabsTrigger value="partners">Partners</TabsTrigger>
+          <TabsTrigger value="sellers">Sellers</TabsTrigger>
         </TabsList>
         <TabsContent value="orders"><Orders /></TabsContent>
         <TabsContent value="catalog"><Catalog /></TabsContent>
         <TabsContent value="partners"><Partners /></TabsContent>
+        <TabsContent value="sellers"><Sellers /></TabsContent>
       </Tabs>
     </div>
   );
@@ -94,7 +96,7 @@ function Catalog() {
   const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: async () => (await supabase.from("categories").select("id, name").order("sort_order")).data ?? [] });
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products"],
-    queryFn: async () => (await supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, is_published, product_variants(id)").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => (await supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, listing_type, is_published, product_variants(id)").order("created_at", { ascending: false })).data ?? [],
   });
 
   const create = async (e: React.FormEvent) => {
@@ -149,7 +151,7 @@ function Catalog() {
             <img src={productImage(p)} alt="" className="h-16 w-14 rounded object-cover" />
             <div className="flex-1">
               <p className="font-medium">{p.name}</p>
-              <p className="tabular text-xs text-muted-foreground">{p.brand} · {formatEtb(p.price_etb_cents)} · {p.product_variants.length} options</p>
+              <p className="tabular text-xs text-muted-foreground">{p.listing_type === "seller" ? "Seller listing" : "Dubai sourcing"} · {p.brand} · {formatEtb(p.price_etb_cents)} · {p.product_variants.length} options</p>
             </div>
             <label className="flex items-center gap-2 text-sm">{p.is_published ? "Live" : "Draft"}<Switch checked={p.is_published} onCheckedChange={(v) => togglePublish(p.id, v)} /></label>
           </div>
@@ -183,6 +185,45 @@ function Partners() {
             {s.status !== "verified" && <Button size="sm" onClick={() => review(s.id, "verified")}>Verify</Button>}
             {s.status === "pending" && <Button size="sm" variant="outline" onClick={() => review(s.id, "rejected")}>Reject</Button>}
             {s.status === "verified" && <Button size="sm" variant="outline" onClick={() => review(s.id, "suspended")}>Suspend</Button>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Sellers() {
+  const qc = useQueryClient();
+  const { data = [] } = useQuery({
+    queryKey: ["admin-sellers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("seller_profiles").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const review = async (id: string, status: "verified" | "rejected" | "suspended") => {
+    const { error } = await supabase.rpc("admin_review_seller", { _seller_id: id, _status: status });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Seller account updated");
+    qc.invalidateQueries({ queryKey: ["admin-sellers"] });
+    qc.invalidateQueries({ queryKey: ["my-seller"] });
+  };
+  return (
+    <div className="mt-4 divide-y rounded-md border bg-card">
+      {data.length === 0 && <p className="p-6 text-muted-foreground">No seller applications yet.</p>}
+      {data.map((seller) => (
+        <div key={seller.id} className="flex flex-col gap-3 p-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="font-semibold">{seller.business_name}</p>
+            <p className="text-sm text-muted-foreground">{seller.phone || "No phone provided"} · Applied {new Date(seller.created_at).toLocaleDateString()}</p>
+            {seller.description && <p className="mt-1 max-w-xl text-sm">{seller.description}</p>}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={seller.status} label={seller.status} />
+            {seller.status !== "verified" && <Button size="sm" onClick={() => review(seller.id, "verified")}>Verify</Button>}
+            {seller.status === "pending" && <Button size="sm" variant="outline" onClick={() => review(seller.id, "rejected")}>Reject</Button>}
+            {seller.status === "verified" && <Button size="sm" variant="outline" onClick={() => review(seller.id, "suspended")}>Suspend</Button>}
           </div>
         </div>
       ))}

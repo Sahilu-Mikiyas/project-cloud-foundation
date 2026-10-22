@@ -193,8 +193,10 @@ export type Database = {
           id: string
           image_url: string | null
           is_published: boolean
+          listing_type: "sourcing" | "seller"
           name: string
           price_etb_cents: number
+          seller_user_id: string | null
           slug: string
           updated_at: string
         }
@@ -208,8 +210,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_published?: boolean
+          listing_type?: "sourcing" | "seller"
           name: string
           price_etb_cents: number
+          seller_user_id?: string | null
           slug: string
           updated_at?: string
         }
@@ -223,8 +227,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_published?: boolean
+          listing_type?: "sourcing" | "seller"
           name?: string
           price_etb_cents?: number
+          seller_user_id?: string | null
           slug?: string
           updated_at?: string
         }
@@ -237,6 +243,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seller_profiles: {
+        Row: {
+          business_name: string
+          created_at: string
+          description: string | null
+          id: string
+          phone: string | null
+          reviewed_at: string | null
+          status: Database["public"]["Enums"]["seller_status"]
+          user_id: string
+        }
+        Insert: {
+          business_name: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          phone?: string | null
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["seller_status"]
+          user_id: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          phone?: string | null
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["seller_status"]
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -328,6 +367,28 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_review_seller: {
+        Args: {
+          _seller_id: string
+          _status: Database["public"]["Enums"]["seller_status"]
+        }
+        Returns: undefined
+      }
+      create_seller_listing: {
+        Args: {
+          _brand: string
+          _category_id: string | null
+          _delivery_days: number
+          _deposit_percent: number
+          _description: string
+          _image_url: string
+          _name: string
+          _price_etb_cents: number
+          _slug: string
+          _variant_labels: string[]
+        }
+        Returns: string
+      }
       admin_set_order_status: {
         Args: {
           _note: string
@@ -350,6 +411,7 @@ export type Database = {
     }
     Enums: {
       app_role: "customer" | "supplier" | "admin"
+      seller_status: "pending" | "verified" | "rejected" | "suspended"
       order_status:
         | "draft"
         | "awaiting_customer_deposit"
@@ -493,6 +555,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["customer", "supplier", "admin"],
+      seller_status: ["pending", "verified", "rejected", "suspended"],
       order_status: [
         "draft",
         "awaiting_customer_deposit",

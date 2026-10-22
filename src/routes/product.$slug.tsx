@@ -59,6 +59,7 @@ function ProductPage() {
   const deposit = Math.floor((subtotal * p.deposit_percent) / 100);
 
   const reserve = async () => {
+    if (p.listing_type === "seller") return;
     if (!user) { navigate({ to: "/auth", search: { next: `/product/${slug}` } }); return; }
     if (!variantId) return;
     setBusy(true);
@@ -76,6 +77,9 @@ function ProductPage() {
       </div>
       <div className="md:col-span-5 md:pt-6">
         <p className="text-xs uppercase tracking-widest text-muted-foreground">{p.brand}</p>
+        <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-primary">
+          {p.listing_type === "seller" ? "Seller listing" : "Dubai sourcing"}
+        </p>
         <h1 className="mt-2 text-3xl font-extrabold md:text-4xl">{p.name}</h1>
         <p className="tabular mt-4 text-2xl font-semibold">{formatEtb(unit)}</p>
         <p className="mt-6 text-muted-foreground">{p.description}</p>
@@ -117,10 +121,14 @@ function ProductPage() {
           <p className="pt-2 text-xs text-muted-foreground">Estimated delivery ~{p.delivery_days} days after a partner is assigned.</p>
         </div>
 
-        <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId} onClick={reserve}>
-          {busy ? "Reserving…" : user ? "Reserve order" : "Sign in to reserve"}
+        <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId || p.listing_type === "seller"} onClick={reserve}>
+          {p.listing_type === "seller" ? "Seller preorders coming soon" : busy ? "Reserving…" : user ? "Reserve order" : "Sign in to reserve"}
         </Button>
-        <p className="mt-3 text-center text-xs text-muted-foreground">Deposit payment will be available soon. Your reservation is saved now.</p>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          {p.listing_type === "seller"
+            ? "This seller listing is published for buyers to discover. Preorder checkout will be added in the next stage."
+            : "Deposit payment will be available soon. Your reservation is saved now."}
+        </p>
       </div>
     </div>
   );
