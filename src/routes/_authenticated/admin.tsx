@@ -39,12 +39,62 @@ function Admin() {
           <TabsTrigger value="catalog">Catalog</TabsTrigger>
           <TabsTrigger value="partners">Partners</TabsTrigger>
           <TabsTrigger value="sellers">Sellers</TabsTrigger>
+          <TabsTrigger value="support">Support</TabsTrigger>
         </TabsList>
         <TabsContent value="orders"><Orders /></TabsContent>
         <TabsContent value="catalog"><Catalog /></TabsContent>
         <TabsContent value="partners"><Partners /></TabsContent>
         <TabsContent value="sellers"><Sellers /></TabsContent>
+        <TabsContent value="support"><SupportCases /></TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function SupportCases() {
+  const qc = useQueryClient();
+  const { data: cases = [], isLoading } = useQuery({
+    queryKey: ["admin-support-cases"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("support_cases")
+        .select("id, order_id, subject, category, status, created_at, orders(reference)")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const setCaseStatus = async (caseId: string, status: "open" | "in_progress" | "waiting_on_customer" | "resolved" | "closed") => {
+    const { error } = await supabase.rpc("admin_set_support_case_status", {
+      _case_id: caseId,
+      _status: status,
+      _note: `Status changed to ${status.replaceAll("_", " ")}`,
+    });
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["admin-support-cases"] });
+  };
+  return (
+    <div className="mt-4 divide-y rounded-md border bg-card">
+      {isLoading && <p className="p-5 text-sm text-muted-foreground">Loading support cases…</p>}
+      {!isLoading && cases.length === 0 && <p className="p-5 text-sm text-muted-foreground">No support cases have been opened.</p>}
+      {cases.map((supportCase) => (
+        <div key={supportCase.id} className="flex flex-wrap items-center gap-4 p-4">
+          <div className="min-w-0 flex-1">
+            <Link to="/account/orders/$id" params={{ id: supportCase.order_id }} className="font-semibold underline">{supportCase.subject}</Link>
+            <p className="text-xs text-muted-foreground">{supportCase.orders?.reference ?? "Order"} · {supportCase.category.replaceAll("_", " ")} · {supportCase.status.replaceAll("_", " ")}</p>
+          </div>
+          <Select value={supportCase.status} onValueChange={(value) => setCaseStatus(supportCase.id, value as "open" | "in_progress" | "waiting_on_customer" | "resolved" | "closed")}>
+            <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="in_progress">In progress</SelectItem>
+              <SelectItem value="waiting_on_customer">Waiting on buyer</SelectItem>
+              <SelectItem value="resolved">Resolved</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      ))}
     </div>
   );
 }

@@ -102,14 +102,17 @@ collection stays on hold until Shanta selects a gateway.
   and opt-out requirements are decided.
 - Do not put sensitive order details in push or SMS previews.
 
-## Stage 9 — Buyer support, cancellation and disputes
+## Stage 9 — Buyer support, cancellation and disputes (implemented)
 
-- Define which unpaid orders can be cancelled by buyers and when seller/admin
-  intervention is required.
-- Add a support case linked to an order, with buyer/seller/admin visibility
-  rules and an auditable status history.
-- Defer paid-order refunds and financial dispute resolution until payment and
-  refund provider workflows exist.
+- Buyers can cancel only their own orders while the order is awaiting a deposit.
+  The database records the reason and status event; the existing inventory
+  trigger releases seller preorder capacity atomically.
+- Buyers can open one active support case per order, select a category, and
+  exchange private messages with the relevant seller and operations admins.
+- Admins can review a support queue, reply, and change a case status. Status
+  changes are recorded with actor, time and reason.
+- Paid-order refunds and financial dispute resolution remain deferred until
+  payment and refund provider workflows exist.
 
 ## Stage 10 — Operations tools
 
