@@ -120,7 +120,11 @@ export type Database = {
           customer_id: string
           deposit_etb_cents: number
           id: string
+          idempotency_key: string | null
+          order_type: "sourcing" | "seller_listing"
           reference: string
+          request_hash: string | null
+          seller_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           subtotal_etb_cents: number
           updated_at: string
@@ -130,7 +134,11 @@ export type Database = {
           customer_id: string
           deposit_etb_cents: number
           id?: string
+          idempotency_key?: string | null
+          order_type?: "sourcing" | "seller_listing"
           reference?: string
+          request_hash?: string | null
+          seller_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_etb_cents: number
           updated_at?: string
@@ -140,7 +148,11 @@ export type Database = {
           customer_id?: string
           deposit_etb_cents?: number
           id?: string
+          idempotency_key?: string | null
+          order_type?: "sourcing" | "seller_listing"
           reference?: string
+          request_hash?: string | null
+          seller_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_etb_cents?: number
           updated_at?: string
@@ -389,6 +401,14 @@ export type Database = {
         }
         Returns: string
       }
+      reserve_seller_order: {
+        Args: { _quantity: number; _request_key: string; _variant_id: string }
+        Returns: string
+      }
+      reserve_sourcing_order: {
+        Args: { _quantity: number; _request_key: string; _variant_id: string }
+        Returns: string
+      }
       admin_set_order_status: {
         Args: {
           _note: string
@@ -415,6 +435,7 @@ export type Database = {
       order_status:
         | "draft"
         | "awaiting_customer_deposit"
+        | "confirmed"
         | "open_for_assignment"
         | "assignment_payment_pending"
         | "assigned"
@@ -422,6 +443,8 @@ export type Database = {
         | "in_transit"
         | "arrived"
         | "ready_for_handover"
+        | "seller_preparing"
+        | "seller_in_delivery"
         | "delivered"
         | "cancelled"
         | "expired"
@@ -559,6 +582,7 @@ export const Constants = {
       order_status: [
         "draft",
         "awaiting_customer_deposit",
+        "confirmed",
         "open_for_assignment",
         "assignment_payment_pending",
         "assigned",
@@ -566,6 +590,8 @@ export const Constants = {
         "in_transit",
         "arrived",
         "ready_for_handover",
+        "seller_preparing",
+        "seller_in_delivery",
         "delivered",
         "cancelled",
         "expired",

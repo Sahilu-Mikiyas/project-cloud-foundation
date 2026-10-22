@@ -14,6 +14,11 @@ products.
 - Published listings appear in the same catalog grid as sourcing products and
   can be filtered by channel.
 - The storefront labels each product as a seller listing or Dubai sourcing.
+- Buyers can submit seller preorders. The order and item store snapshots of the
+  listing name, option, price and deposit terms used at submission.
+- Order submissions are idempotent, so retrying the same request does not create
+  another order. Sellers can see orders for their listings without customer
+  contact information.
 - Suspending or rejecting a seller unpublishes their listings. Public catalog
   access also checks that a seller remains verified.
 
@@ -26,14 +31,14 @@ products.
 - Seller applications and profiles are private to the seller and authorized
   operations staff.
 - Seller listing deposits do not create supplier assignment fees.
-- A seller listing detail page currently shows its deposit terms but does not
-  create a preorder. Buyer order creation, payment confirmation and immutable
-  order price snapshots belong to the next order-flow stage.
+- A preorder is not paid when it is created. Payment collection and provider
+  confirmation are a later stage.
 
 ## Current limits
 
 - Product images use a URL; direct image upload and moderation are not included
   in this stage.
 - Listing inventory limits and seller fulfillment milestones are not included.
-- Checkout is disabled for seller listings until the seller preorder order flow
-  is implemented.
+- Seller preorder submission records an order but does not collect the deposit.
+- Inventory limits, seller fulfillment milestones and payment collection are
+  not included in this stage.

@@ -26,8 +26,7 @@ function Account() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, reference, status, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)")
-        .eq("customer_id", user!.id)
+        .select("id, reference, order_type, status, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -42,14 +41,14 @@ function Account() {
         {isLoading && <p className="p-6 text-muted-foreground">Loading…</p>}
         {orders?.length === 0 && (
           <div className="p-10 text-center">
-            <p className="text-muted-foreground">You haven't reserved anything yet.</p>
+            <p className="text-muted-foreground">You haven't placed an order yet.</p>
             <Button asChild className="mt-4"><Link to="/shop">Browse the shop</Link></Button>
           </div>
         )}
         {orders?.map((o) => (
           <Link key={o.id} to="/account/orders/$id" params={{ id: o.id }} className="flex flex-col gap-2 p-5 transition-colors hover:bg-sand/40 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="tabular text-xs text-muted-foreground">{o.reference} · {new Date(o.created_at).toLocaleDateString()}</p>
+              <p className="tabular text-xs text-muted-foreground">{o.reference} · {o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing"} · {new Date(o.created_at).toLocaleDateString()}</p>
               <p className="font-semibold">{o.order_items.map((i) => `${i.product_name}${i.variant_label ? ` (${i.variant_label})` : ""} × ${i.quantity}`).join(", ")}</p>
             </div>
             <div className="flex items-center gap-4">

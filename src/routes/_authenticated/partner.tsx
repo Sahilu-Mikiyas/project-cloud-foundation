@@ -230,6 +230,18 @@ function SellerListings({ userId }: { userId: string }) {
       return data ?? [];
     },
   });
+  const { data: sellerOrders = [] } = useQuery({
+    queryKey: ["seller-orders", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, reference, status, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)")
+        .eq("seller_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const createListing = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -341,6 +353,26 @@ function SellerListings({ userId }: { userId: string }) {
           </div>
         ))}
       </div>
+      <section className="mt-8">
+        <h4 className="font-semibold">Orders for your listings</h4>
+        <p className="mt-1 text-sm text-muted-foreground">New preorders appear here with their deposit status. Customer contact details are not shown in this view.</p>
+        <div className="mt-4 divide-y rounded-md border bg-background">
+          {sellerOrders.length === 0 && <p className="p-5 text-sm text-muted-foreground">No preorders yet.</p>}
+          {sellerOrders.map((order) => (
+            <div key={order.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
+              <div>
+                <p className="tabular text-xs text-muted-foreground">{order.reference} · {new Date(order.created_at).toLocaleDateString()}</p>
+                <p className="font-medium">{order.order_items.map((item) => `${item.product_name} (${item.variant_label}) × ${item.quantity}`).join(", ")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Deposit due: {formatEtb(order.deposit_etb_cents)}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="tabular text-sm">{formatEtb(order.subtotal_etb_cents)}</span>
+                <StatusBadge status={order.status} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

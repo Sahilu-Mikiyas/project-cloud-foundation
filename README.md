@@ -8,8 +8,9 @@ Shanta supports two parallel product channels: Shanta-managed products sourced
 from Dubai through verified partners, and seller-managed product listings with
 seller-set ETB prices and deposit terms. Seller listings share the public
 catalog but do not replace the Dubai sourcing and supplier assignment flow.
-Seller listing discovery and management are being implemented before buyer
-preorder checkout; payment collection remains a later stage.
+Buyers can create a seller preorder or a Dubai sourcing reservation. The
+database records the listed price and deposit due, while payment collection
+and confirmation remain a later stage.
 
 This project was built with [Lovable](https://lovable.dev).
 

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,7 @@ function ProductPage() {
   const [variantId, setVariantId] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
+  const requestKeyRef = useRef<string | null>(null);
 
   const { data: p, isLoading } = useQuery({
     queryKey: ["product", slug],
@@ -59,15 +60,27 @@ function ProductPage() {
   const deposit = Math.floor((subtotal * p.deposit_percent) / 100);
 
   const reserve = async () => {
-    if (p.listing_type === "seller") return;
     if (!user) { navigate({ to: "/auth", search: { next: `/product/${slug}` } }); return; }
     if (!variantId) return;
     setBusy(true);
-    const { data, error } = await supabase.rpc("reserve_order", { _variant_id: variantId, _quantity: qty });
+    const storageKey = `shanta-order-request:${user.id}:${p.id}`;
+    const requestKey = requestKeyRef.current ?? sessionStorage.getItem(storageKey) ?? crypto.randomUUID();
+    requestKeyRef.current = requestKey;
+    sessionStorage.setItem(storageKey, requestKey);
+    const { data, error } = p.listing_type === "seller"
+      ? await supabase.rpc("reserve_seller_order", { _variant_id: variantId, _quantity: qty, _request_key: requestKey })
+      : await supabase.rpc("reserve_sourcing_order", { _variant_id: variantId, _quantity: qty, _request_key: requestKey });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Reservation created");
+    sessionStorage.removeItem(storageKey);
+    requestKeyRef.current = null;
+    toast.success(p.listing_type === "seller" ? "Preorder created" : "Reservation created");
     navigate({ to: "/account/orders/$id", params: { id: data as string } });
+  };
+
+  const resetRequestKey = () => {
+    requestKeyRef.current = null;
+    if (user && p) sessionStorage.removeItem(`shanta-order-request:${user.id}:${p.id}`);
   };
 
   return (
@@ -92,7 +105,7 @@ function ProductPage() {
                 <button
                   key={x.id}
                   disabled={!x.is_available}
-                  onClick={() => setVariantId(x.id)}
+                  onClick={() => { resetRequestKey(); setVariantId(x.id); }}
                   className={cn(
                     "min-h-11 rounded-md border px-4 text-sm transition-colors disabled:opacity-40",
                     variantId === x.id ? "border-ink bg-ink text-ink-foreground" : "hover:bg-sand",
@@ -108,9 +121,9 @@ function ProductPage() {
         <div className="mt-6">
           <p className="mb-3 text-sm font-medium">Quantity</p>
           <div className="inline-flex items-center rounded-md border">
-            <button className="p-3" aria-label="Decrease" onClick={() => setQty((q) => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></button>
+            <button className="p-3" aria-label="Decrease" onClick={() => { resetRequestKey(); setQty((q) => Math.max(1, q - 1)); }}><Minus className="h-4 w-4" /></button>
             <span className="tabular w-10 text-center">{qty}</span>
-            <button className="p-3" aria-label="Increase" onClick={() => setQty((q) => Math.min(10, q + 1))}><Plus className="h-4 w-4" /></button>
+            <button className="p-3" aria-label="Increase" onClick={() => { resetRequestKey(); setQty((q) => Math.min(10, q + 1)); }}><Plus className="h-4 w-4" /></button>
           </div>
         </div>
 
@@ -121,12 +134,12 @@ function ProductPage() {
           <p className="pt-2 text-xs text-muted-foreground">Estimated delivery ~{p.delivery_days} days after a partner is assigned.</p>
         </div>
 
-        <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId || p.listing_type === "seller"} onClick={reserve}>
-          {p.listing_type === "seller" ? "Seller preorders coming soon" : busy ? "Reserving…" : user ? "Reserve order" : "Sign in to reserve"}
+        <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId} onClick={reserve}>
+          {busy ? "Creating order…" : p.listing_type === "seller" ? user ? "Create preorder (deposit due)" : "Sign in to preorder" : user ? "Reserve order" : "Sign in to reserve"}
         </Button>
         <p className="mt-3 text-center text-xs text-muted-foreground">
           {p.listing_type === "seller"
-            ? "This seller listing is published for buyers to discover. Preorder checkout will be added in the next stage."
+            ? "This creates an order and records the listed price and deposit. Online deposit collection is coming in the payment stage."
             : "Deposit payment will be available soon. Your reservation is saved now."}
         </p>
       </div>

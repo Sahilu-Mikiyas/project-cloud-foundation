@@ -2,7 +2,7 @@ import { CheckCircle2, Clock, AlertTriangle, Circle } from "lucide-react";
 import { ORDER_STATUS_LABEL } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const DONE = new Set(["delivered", "assigned", "purchased", "arrived", "ready_for_handover", "verified"]);
+const DONE = new Set(["delivered", "confirmed", "assigned", "purchased", "arrived", "ready_for_handover", "verified"]);
 const BAD = new Set(["cancelled", "expired", "disputed", "rejected", "suspended"]);
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {

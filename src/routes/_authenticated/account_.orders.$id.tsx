@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { StatusBadge } from "@/components/StatusBadge";
-import { formatEtb, ORDER_FLOW, ORDER_STATUS_LABEL } from "@/lib/format";
+import { formatEtb, ORDER_FLOW, ORDER_STATUS_LABEL, SELLER_ORDER_FLOW } from "@/lib/format";
 import { productImage } from "@/lib/product-images";
 import { cn } from "@/lib/utils";
 
@@ -11,9 +11,9 @@ export const Route = createFileRoute("/_authenticated/account_/orders/$id")({
   head: () => ({
     meta: [
       { title: "Order details — Shanta" },
-      { name: "description", content: "Track your Shanta order from Dubai to handover." },
+      { name: "description", content: "Track your Shanta sourcing reservation or seller preorder." },
       { property: "og:title", content: "Order details — Shanta" },
-      { property: "og:description", content: "Track your Shanta order from Dubai to handover." },
+      { property: "og:description", content: "Track your Shanta sourcing reservation or seller preorder." },
     ],
   }),
   component: OrderDetail,
@@ -26,7 +26,7 @@ function OrderDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*, order_items(*), order_events(id, status, note, created_at)")
+        .select("id, reference, order_type, seller_id, status, subtotal_etb_cents, deposit_etb_cents, created_at, updated_at, order_items(*), order_events(id, status, note, created_at)")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -37,7 +37,8 @@ function OrderDetail() {
   if (isLoading) return <div className="mx-auto max-w-5xl px-4 py-12">Loading…</div>;
   if (!o) return <div className="mx-auto max-w-5xl px-4 py-12">Order not found. <Link to="/account" className="underline">Back</Link></div>;
 
-  const currentIdx = ORDER_FLOW.indexOf(o.status as (typeof ORDER_FLOW)[number]);
+  const orderFlow: readonly string[] = o.order_type === "seller_listing" ? SELLER_ORDER_FLOW : ORDER_FLOW;
+  const currentIdx = orderFlow.indexOf(o.status);
   const events = [...o.order_events].sort((a, b) => a.created_at.localeCompare(b.created_at));
 
   return (
@@ -47,6 +48,7 @@ function OrderDetail() {
         <h1 className="tabular text-3xl font-extrabold">{o.reference}</h1>
         <StatusBadge status={o.status} />
       </div>
+      <p className="mt-2 text-sm text-muted-foreground">{o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing reservation"}</p>
 
       <div className="mt-10 grid gap-10 md:grid-cols-12">
         <div className="space-y-6 md:col-span-7">
@@ -66,7 +68,11 @@ function OrderDetail() {
             <div className="mt-2 flex justify-between font-semibold"><span>Reservation deposit</span><span className="tabular">{formatEtb(o.deposit_etb_cents)}</span></div>
             <div className="mt-2 flex justify-between"><span className="text-muted-foreground">Balance on handover</span><span className="tabular">{formatEtb(o.subtotal_etb_cents - o.deposit_etb_cents)}</span></div>
             {o.status === "awaiting_customer_deposit" && (
-              <p className="mt-4 rounded bg-muted p-3 text-xs text-muted-foreground">Deposit not yet paid. Online deposit payment is coming soon — our team will contact you to confirm.</p>
+              <p className="mt-4 rounded bg-muted p-3 text-xs text-muted-foreground">
+                {o.order_type === "seller_listing"
+                  ? "Deposit not yet paid. This preorder records the listing price and deposit due; online payment will be added in the payment stage."
+                  : "Deposit not yet paid. Online deposit payment is coming soon — our team will contact you to confirm."}
+              </p>
             )}
           </div>
         </div>
@@ -74,7 +80,7 @@ function OrderDetail() {
         <div className="md:col-span-5">
           <h2 className="text-lg font-bold">Progress</h2>
           <ol className="mt-4 space-y-4">
-            {ORDER_FLOW.map((s, idx) => {
+            {orderFlow.map((s, idx) => {
               const done = currentIdx >= 0 && idx < currentIdx;
               const current = idx === currentIdx;
               return (

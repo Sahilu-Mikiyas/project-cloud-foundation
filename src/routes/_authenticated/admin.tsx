@@ -53,7 +53,7 @@ function Orders() {
   const qc = useQueryClient();
   const { data = [] } = useQuery({
     queryKey: ["admin-orders"],
-    queryFn: async () => (await supabase.from("orders").select("id, reference, status, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => (await supabase.from("orders").select("id, reference, order_type, status, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)").order("created_at", { ascending: false })).data ?? [],
   });
   const setStatus = async (id: string, status: string) => {
     const { error } = await supabase.rpc("admin_set_order_status", { _order_id: id, _status: status as never, _note: "Updated by operations" });
@@ -64,12 +64,13 @@ function Orders() {
   return (
     <div className="mt-4 overflow-x-auto rounded-md border bg-card">
       <table className="w-full text-sm">
-        <thead className="border-b text-left text-muted-foreground"><tr><th className="p-3">Reference</th><th className="p-3">Items</th><th className="p-3 text-right">Total</th><th className="p-3 text-right">Deposit</th><th className="p-3">Status</th><th className="p-3">Change</th></tr></thead>
+        <thead className="border-b text-left text-muted-foreground"><tr><th className="p-3">Reference</th><th className="p-3">Flow</th><th className="p-3">Items</th><th className="p-3 text-right">Total</th><th className="p-3 text-right">Deposit</th><th className="p-3">Status</th><th className="p-3">Change</th></tr></thead>
         <tbody className="divide-y">
-          {data.length === 0 && <tr><td colSpan={6} className="p-6 text-muted-foreground">No orders yet.</td></tr>}
+          {data.length === 0 && <tr><td colSpan={7} className="p-6 text-muted-foreground">No orders yet.</td></tr>}
           {data.map((o) => (
             <tr key={o.id}>
               <td className="tabular p-3">{o.reference}</td>
+              <td className="p-3">{o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing"}</td>
               <td className="p-3">{o.order_items.map((i) => `${i.product_name} (${i.variant_label}) × ${i.quantity}`).join(", ")}</td>
               <td className="tabular p-3 text-right">{formatEtb(o.subtotal_etb_cents)}</td>
               <td className="tabular p-3 text-right">{formatEtb(o.deposit_etb_cents)}</td>
@@ -77,7 +78,9 @@ function Orders() {
               <td className="p-3">
                 <Select value={o.status} onValueChange={(v) => setStatus(o.id, v)}>
                   <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(ORDER_STATUS_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
+                  <SelectContent>{Object.entries(ORDER_STATUS_LABEL)
+                    .filter(([status]) => ["awaiting_customer_deposit", "cancelled", "expired", "disputed"].includes(status))
+                    .map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
                 </Select>
               </td>
             </tr>
