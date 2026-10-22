@@ -29,7 +29,7 @@ function Home() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, slug, name, brand, image_url, price_etb_cents, delivery_days, listing_type")
+        .select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type")
         .eq("is_published", true)
         .order("created_at", { ascending: false })
         .limit(4);
@@ -154,3 +154,4 @@ function ChannelCard({ eyebrow, title, detail, link, href, tone }: { eyebrow: st
     </div>
   );
 }
+
