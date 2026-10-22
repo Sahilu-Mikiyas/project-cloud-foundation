@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -414,6 +414,7 @@ function SellerListings({ userId }: { userId: string }) {
                 <p className="mt-1 text-xs text-muted-foreground">
                   Seller response: {order.seller_response === "accepted" ? "Availability confirmed" : order.seller_response === "declined" ? "Declined" : "Waiting for your response"}
                 </p>
+                <Link to="/account/orders/$id" params={{ id: order.id }} className="mt-2 inline-block text-xs underline">Open order and support conversation</Link>
               </div>
               <div className="flex items-center gap-3">
                 <span className="tabular text-sm">{formatEtb(order.subtotal_etb_cents)}</span>
