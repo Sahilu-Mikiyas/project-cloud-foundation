@@ -1,9 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import "@lovable.dev/cloud-auth-js/styles.css";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,12 +65,18 @@ function AuthPage() {
     }
   };
 
-  const oauth = async (provider: "google" | "lovable") => {
-    if (next) sessionStorage.setItem("shanta_next", next);
-    const r = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin });
-    if (r.error) { toast.error(r.error.message ?? "Sign in failed"); return; }
-    if (r.redirected) return;
-    done();
+  const oauth = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin + (next ?? "/account") },
+      });
+      if (error) throw error;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Sign in failed");
+      setBusy(false);
+    }
   };
 
   return (
@@ -92,8 +96,7 @@ function AuthPage() {
 
       {mode !== "forgot" && (
         <div className="mt-8 space-y-3">
-          <Button variant="outline" className="h-11 w-full" onClick={() => oauth("google")}>Continue with Google</Button>
-          <button type="button" className="lovable-auth-button w-full" onClick={() => oauth("lovable")}>Continue with Lovable</button>
+          <Button variant="outline" className="h-11 w-full" onClick={() => void oauth()} disabled={busy}>Continue with Google</Button>
           <div className="flex items-center gap-3 py-2 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or continue with email<span className="h-px flex-1 bg-border" /></div>
         </div>
       )}
