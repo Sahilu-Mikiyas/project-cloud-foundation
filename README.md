@@ -1,34 +1,29 @@
-# Project Cloud Foundation
+# Shanta
 
-Can we build the initial UI and cloud connections for this then we get to the rest of it later
+Shanta is a cross-border shopping marketplace with two parallel product channels:
 
-Build this on Lovable's stack instead of the Go backend and self-managed PostgreSQL in the blueprint: a React and TypeScript frontend with Lovable Cloud for the database, sign-in, storage, and server functions. Payments and the assignment-fee ledger come later.
+- Shanta-managed products sourced through verified partners in markets around the world.
+- Seller-managed listings with seller-set prices, preorder terms, and deposits.
 
-Shanta supports two parallel product channels: Shanta-managed products sourced
-from Dubai through verified partners, and seller-managed product listings with
-seller-set ETB prices and deposit terms. Seller listings share the public
-catalog but do not replace the Dubai sourcing and supplier assignment flow.
-Buyers can create a seller preorder or a Dubai sourcing reservation. The
-database records the listed price and deposit due, while payment collection
-and confirmation remain a later stage.
+The web app uses React, TypeScript, TanStack Start, and Supabase for authentication and data. Payment collection remains a later stage; the database records order and deposit terms without claiming a payment has been collected.
 
-This project was built with [Lovable](https://lovable.dev).
+## Supabase project
 
-## Build with Lovable
+The application is configured for the Shanta Supabase project `xczypfauwzeaogijcwgj`. Its database schema and initial catalog rows are maintained in `drizzle/migrations`.
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/29ff489d-2812-4c76-be24-e5dc7639f91d).
+Copy `.env.example` to `.env` and set the project's publishable key. Set `SUPABASE_SERVICE_ROLE_KEY` only for trusted server-side code that needs privileged operations; never add it to a `VITE_` variable or browser bundle. Set `SUPABASE_DB_URL` only when running Drizzle migrations locally, and use the connection string from the Supabase dashboard.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## Local development
 
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Install dependencies with Bun, then start the app:
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+bun install
+bun run dev
 ```
+
+Available scripts include `bun run build`, `bun run lint`, and `bun run test`.
+
+## Database migrations
+
+SQL migration files are stored in `drizzle/migrations`. Apply schema changes through the Supabase migration workflow for the configured project, and keep the migration files in version control so another environment can be initialized consistently.
