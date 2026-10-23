@@ -138,14 +138,19 @@ collection stays on hold until Shanta selects a gateway.
   the image and records the action and reason in the operations audit log.
 - Existing sourcing catalog management remains unchanged.
 
-## Stage 12 — Release readiness
+## Stage 12 — Release readiness (runbook added; environment verification pending)
 
+- Follow [`release-readiness.md`](release-readiness.md) for the release record,
+  staging smoke checks, access-control matrix, accessibility and slow-network
+  review, migration/restore rehearsal, monitoring ownership and Vercel checks.
 - Review mobile layouts, keyboard navigation, screen-reader labels, loading and
   error states, and slow-network behavior.
 - Exercise RLS and transition rules using customer, verified seller, suspended
   seller, supplier, admin and anonymous identities.
 - Add operational monitoring, backup/restore checks, migration rehearsal and a
-  rollback plan before production release.
+  rollback plan before production release. Do not mark this stage complete
+  until the runbook contains evidence from the configured staging and recovery
+  environment.
 
 ## Deferred decisions
 
