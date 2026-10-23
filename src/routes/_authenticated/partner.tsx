@@ -215,6 +215,7 @@ const emptyListing: ListingForm = {
 
 function SellerListings({ userId }: { userId: string }) {
   const qc = useQueryClient();
+  const [workspaceTab, setWorkspaceTab] = useState<"overview" | "listings" | "preorders" | "support">("overview");
   const [form, setForm] = useState<ListingForm>(emptyListing);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -249,6 +250,20 @@ function SellerListings({ userId }: { userId: string }) {
         .select("id, reference, status, seller_response, seller_responded_at, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)")
         .eq("seller_id", userId)
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const { data: sellerSupportCases = [] } = useQuery({
+    queryKey: ["seller-support-cases", userId, sellerOrders.map((order) => order.id).join(",")],
+    enabled: sellerOrders.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("support_cases")
+        .select("id, order_id, subject, category, status, updated_at")
+        .in("order_id", sellerOrders.map((order) => order.id))
+        .order("updated_at", { ascending: false })
+        .limit(20);
       if (error) throw error;
       return data ?? [];
     },
@@ -338,9 +353,74 @@ function SellerListings({ userId }: { userId: string }) {
     qc.invalidateQueries({ queryKey: ["unread-notifications", userId] });
   };
 
+  const publishedListings = listings.filter((listing) => listing.is_published).length;
+  const waitingForSeller = sellerOrders.filter((order) => order.status === "awaiting_customer_deposit" && order.seller_response === "pending").length;
+  const activeSupportCases = sellerSupportCases.filter((supportCase) => supportCase.status === "open" || supportCase.status === "in_progress").length;
+
   return (
     <div className="mt-6 border-t pt-6">
-      <h3 className="font-semibold">Your product listings</h3>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Seller studio</p>
+          <h3 className="mt-1 font-display text-2xl font-medium sm:text-3xl">Your local storefront</h3>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Advertise products before they are ready, set your price and deposit terms, and review incoming preorder requests. A preorder records interest; it does not collect payment.</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">All listings</p><p className="mt-1 font-display text-3xl tabular-nums">{listings.length}</p></div>
+        <div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Currently advertised</p><p className="mt-1 font-display text-3xl tabular-nums">{publishedListings}</p></div>
+        <div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Need your response</p><p className="mt-1 font-display text-3xl tabular-nums">{waitingForSeller}</p></div>
+        <div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Active support cases</p><p className="mt-1 font-display text-3xl tabular-nums">{activeSupportCases}</p></div>
+      </div>
+
+      <div className="mt-6 flex gap-2 overflow-x-auto border-b" role="tablist" aria-label="Seller workspace">
+        {([
+          ["overview", "Overview"],
+          ["listings", "Listings"],
+          ["preorders", `Preorders${waitingForSeller ? ` · ${waitingForSeller}` : ""}`],
+          ["support", `Support${activeSupportCases ? ` · ${activeSupportCases}` : ""}`],
+        ] as const).map(([tab, label]) => (
+          <button key={tab} type="button" role="tab" aria-selected={workspaceTab === tab} aria-controls={`seller-panel-${tab}`} onKeyDown={(event) => {
+            if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const tabs = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []);
+            const currentIndex = tabs.indexOf(event.currentTarget);
+            const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+            tabs[nextIndex]?.focus();
+            tabs[nextIndex]?.click();
+          }} onClick={() => setWorkspaceTab(tab)} className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${workspaceTab === tab ? "border-gold text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <section id="seller-panel-overview" role="tabpanel" hidden={workspaceTab !== "overview"} className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
+          <div className="rounded-3xl border bg-background p-5 md:p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Your next steps</p>
+            <h4 className="mt-2 font-display text-2xl">Keep your storefront moving.</h4>
+            <div className="mt-5 space-y-3">
+              <div className="flex items-start gap-3 rounded-2xl bg-secondary/55 p-4"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-gold text-xs font-semibold">01</span><div><p className="text-sm font-medium">Create and advertise a product</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Add photos, options, delivery estimates, your ETB price and the deposit percentage buyers will see.</p></div></div>
+              <div className="flex items-start gap-3 rounded-2xl bg-secondary/55 p-4"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-gold text-xs font-semibold">02</span><div><p className="text-sm font-medium">Review each preorder request</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Accept to confirm availability at the saved terms, or decline to cancel the unpaid request.</p></div></div>
+              <div className="flex items-start gap-3 rounded-2xl bg-secondary/55 p-4"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-gold text-xs font-semibold">03</span><div><p className="text-sm font-medium">Keep buyers informed</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Order updates and support conversations are available from each preorder.</p></div></div>
+            </div>
+            <p className="mt-4 rounded-xl border border-gold/30 bg-gold/10 p-3 text-xs leading-5 text-muted-foreground">Online deposit collection is not enabled yet. Buyers can submit a preorder and see the deposit due, but it is not marked paid.</p>
+          </div>
+          <div className="rounded-3xl border bg-background p-5 md:p-6">
+            <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Action queue</p><h4 className="mt-1 font-display text-2xl">Preorders to review</h4></div><BadgeCheck className="size-5 text-gold" aria-hidden /></div>
+            {waitingForSeller === 0 ? <p className="mt-5 rounded-2xl bg-secondary/55 p-4 text-sm text-muted-foreground">You are all caught up. New preorder requests will appear here.</p> : (
+              <div className="mt-4 space-y-3">{sellerOrders.filter((order) => order.status === "awaiting_customer_deposit" && order.seller_response === "pending").slice(0, 3).map((order) => (
+                <div key={order.id} className="rounded-2xl border p-4"><p className="tabular text-xs text-muted-foreground">{order.reference} · {new Date(order.created_at).toLocaleDateString()}</p><p className="mt-1 text-sm font-medium">{order.order_items.map((item) => `${item.product_name} × ${item.quantity}`).join(", ")}</p><p className="mt-1 text-xs text-muted-foreground">Deposit due: {formatEtb(order.deposit_etb_cents)} · not yet paid</p></div>
+              ))}</div>
+            )}
+            <Button className="mt-4 w-full" variant="outline" onClick={() => setWorkspaceTab("preorders")}>Open preorder queue</Button>
+            <Button className="mt-2 w-full" onClick={() => setWorkspaceTab("listings")}>Manage product listings</Button>
+            <Link to="/account" className="mt-4 block text-center text-sm font-medium underline-offset-4 hover:underline">Account, orders and notifications</Link>
+          </div>
+        </section>
+
+      <section id="seller-panel-listings" role="tabpanel" hidden={workspaceTab !== "listings"} className="mt-5">
+      <h3 className="font-display text-2xl font-medium">Your product listings</h3>
       <p className="mt-1 text-sm text-muted-foreground">Create a draft, choose its price and deposit, add listing details, then upload images for review before publishing.</p>
       <form onSubmit={createListing} className="mt-5 grid gap-3 rounded-md border bg-background p-4 md:grid-cols-2">
         <Field id="listing-name" label="Product name" required value={form.name} onChange={(name) => setForm({ ...form, name })} />
@@ -414,6 +494,9 @@ function SellerListings({ userId }: { userId: string }) {
           </div>
         ))}
       </div>
+      </section>
+
+      <section id="seller-panel-preorders" role="tabpanel" hidden={workspaceTab !== "preorders"} className="mt-5">
       <section className="mt-8">
         <h4 className="font-semibold">Orders for your listings</h4>
         <p className="mt-1 text-sm text-muted-foreground">Confirm whether you can fulfill a preorder at its listed terms. Acceptance does not mean the deposit was paid or that fulfillment has started. Customer contact details are not shown here.</p>
@@ -444,6 +527,21 @@ function SellerListings({ userId }: { userId: string }) {
           ))}
         </div>
       </section>
+      </section>
+
+      <section id="seller-panel-support" role="tabpanel" hidden={workspaceTab !== "support"} className="mt-5">
+        <div className="mb-4"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Customer care</p><h3 className="mt-1 font-display text-2xl font-medium">Order support</h3><p className="mt-1 text-sm text-muted-foreground">Continue private conversations attached to your seller orders. Buyer contact details are not shown in this queue.</p></div>
+        <div className="divide-y rounded-2xl border bg-background">
+          {sellerSupportCases.length === 0 && <p className="p-5 text-sm text-muted-foreground">No support conversations are attached to your orders.</p>}
+          {sellerSupportCases.map((supportCase) => (
+              <div key={supportCase.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
+              <div className="min-w-0"><p className="tabular text-xs text-muted-foreground">{sellerOrders.find((order) => order.id === supportCase.order_id)?.reference ?? "Seller order"} · Updated {new Date(supportCase.updated_at).toLocaleDateString()}</p><p className="mt-1 font-medium">{supportCase.subject}</p><p className="mt-1 text-xs text-muted-foreground">{supportCase.category.replaceAll("_", " ")}</p></div>
+              <div className="flex items-center gap-3"><StatusBadge status={supportCase.status} /><Link to="/account/orders/$id" params={{ id: supportCase.order_id }} className="text-sm font-medium underline-offset-4 hover:underline">Open conversation</Link></div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
+

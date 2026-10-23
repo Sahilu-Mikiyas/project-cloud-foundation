@@ -57,7 +57,7 @@ Every shopper-facing product and journey should make these distinctions clear:
 
 ## Classified implementation stages
 
-### R1 — Visual foundation and buyer discovery (current)
+### R1 — Visual foundation and buyer discovery (complete)
 
 - Establish shared color, type, spacing, radius, focus and surface tokens.
 - Refresh the global header/footer and navigation groupings without removing
@@ -75,7 +75,7 @@ Every shopper-facing product and journey should make these distinctions clear:
   and menu transitions. Respect reduced-motion preferences and preserve usable
   content when IntersectionObserver is unavailable.
 
-### R2 — Product detail and preorder decision
+### R2 — Product detail and preorder decision (complete)
 
 - Organize product media, channel and seller/source attribution, option selection,
   availability, delivery estimate and price summary into a readable hierarchy.
@@ -85,7 +85,7 @@ Every shopper-facing product and journey should make these distinctions clear:
 - Improve mobile sticky/visible order action only if it does not hide terms or
   accessibility focus.
 
-### R3 — Customer account and order journeys
+### R3 — Customer account and order journeys (complete)
 
 - Group orders by seller preorder and Dubai sourcing, with statuses and next
   actions understandable at a glance.
@@ -93,9 +93,15 @@ Every shopper-facing product and journey should make these distinctions clear:
   preserve permissions and transition rules.
 - Provide clear empty, loading, retry and permission-denied states.
 
-### R4 — Seller workspace and storefront
+### R4 — Seller workspace and storefront (current)
 
-- Classify seller tasks into overview, listings, orders, support and account.
+- Classify seller tasks into overview, listings, preorders, support and account
+  access. The current workspace provides a summary/action queue, focused listing
+  editor, preorder review queue, support conversation list and account link.
+- Explain that sellers may advertise products before they are ready, set the
+  product price and deposit terms, and review buyer preorder requests. Continue
+  to state that a submitted preorder does not collect payment while the gateway
+  is on hold.
 - Make listing lifecycle states clear: draft, scheduled/advertised, published,
   paused and rejected where supported. Do not invent a scheduling capability;
   if early-advertisement requires new data/workflow, define it separately before
@@ -103,6 +109,10 @@ Every shopper-facing product and journey should make these distinctions clear:
 - Present seller price, deposit terms, inventory/preorder limit, delivery
   estimate, description, options and moderated media in a clean listing editor.
 - Separate the public shopper preview from private seller controls.
+- The current product schema stores only `is_published`, so it cannot distinguish
+  a never-published draft from a previously published listing that was paused.
+  Keep the UI accurate to this limitation; schedule dates and richer lifecycle
+  states require a separate data/workflow design.
 
 ### R5 — Supplier and operations workspaces
 
@@ -131,3 +141,4 @@ Every shopper-facing product and journey should make these distinctions clear:
   release-readiness PR already in progress remains separate and unchanged.
 - Stage R1 must keep public catalog filtering aligned with RLS and must not show
   draft or unapproved seller media.
+
