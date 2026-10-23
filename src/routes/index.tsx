@@ -17,9 +17,9 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Shanta — Good finds, closer to home" },
-      { name: "description", content: "Shop trusted Ethiopian sellers and products sourced from Dubai through verified partners." },
+      { name: "description", content: "Shop trusted sellers and sourcing finds from markets around the world." },
       { property: "og:title", content: "Shanta — Good finds, closer to home" },
-      { property: "og:description", content: "Explore local seller listings and Dubai sourcing with clear ETB prices." },
+      { property: "og:description", content: "Explore seller listings and sourcing finds by region, country and city." },
     ],
   }),
   component: Home,
@@ -32,7 +32,7 @@ function Home() {
     queryKey: ["products", "featured"],
     queryFn: async () => {
       const { data, error } = await supabase.from("products")
-        .select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type")
+        .select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city")
         .eq("is_published", true).order("created_at", { ascending: false }).limit(4);
       if (error) throw error;
       return data;
@@ -49,7 +49,7 @@ function Home() {
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    navigate({ to: "/shop", search: { q: search.trim() || undefined, category: undefined, channel: undefined } });
+    navigate({ to: "/shop", search: { q: search.trim() || undefined, category: undefined, channel: undefined, region: undefined } });
   };
   const sellerFeature = products.find((product) => product.listing_type === "seller");
   const sourcingFeature = products.find((product) => product.listing_type === "sourcing");
@@ -64,7 +64,7 @@ function Home() {
         </div>
         <div className="pointer-events-none absolute right-[8%] top-[28%] hidden rotate-3 rounded-2xl border border-white/70 bg-white/75 px-5 py-4 shadow-elevated backdrop-blur-xl lg:block">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">The Shanta edit</p>
-          <p className="mt-1 font-display text-xl">Local finds. Dubai picks.</p>
+          <p className="mt-1 font-display text-xl">Finds from many markets.</p>
           <div className="mt-3 flex items-center gap-2 text-xs text-foreground/70"><span className="size-1.5 rounded-full bg-gold" /> Clear ETB prices and order terms</div>
         </div>
         <div className="relative mx-auto w-full max-w-7xl px-5 pb-10 pt-32 sm:px-8 sm:pb-14 lg:px-10 lg:pb-16">
@@ -76,7 +76,7 @@ function Home() {
               Good things,<br /><span className="italic">closer to home.</span>
             </h1>
             <p className="hero-enter hero-enter-3 mt-6 max-w-xl text-pretty text-base leading-7 text-foreground/70 sm:text-lg">
-              Meet local sellers worth knowing and discover special finds sourced through our trusted Dubai partners.
+              Meet sellers across markets and discover sourcing finds with their region and country shown up front.
             </p>
           </div>
 
@@ -89,9 +89,9 @@ function Home() {
 
           <div className="hero-enter hero-enter-5 mt-5 flex flex-wrap items-center gap-2 text-xs" aria-label="Explore Shanta">
             <span className="mr-1 text-muted-foreground">Explore</span>
-            <Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller" }} className="rounded-full border border-border/80 bg-background/75 px-3.5 py-2 font-medium backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:bg-background">Local sellers</Link>
-            <Link to="/shop" search={{ q: undefined, category: undefined, channel: "sourcing" }} className="rounded-full border border-border/80 bg-background/75 px-3.5 py-2 font-medium backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:bg-background">Dubai sourcing</Link>
-            {categories.slice(0, 2).map((category) => <Link key={category.id} to="/shop" search={{ q: undefined, category: category.id, channel: undefined }} className="rounded-full border border-border/80 bg-background/75 px-3.5 py-2 font-medium backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:bg-background">{category.name}</Link>)}
+            <Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller", region: undefined }} className="rounded-full border border-border/80 bg-background/75 px-3.5 py-2 font-medium backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:bg-background">Local sellers</Link>
+            <Link to="/shop" search={{ q: undefined, category: undefined, channel: "sourcing", region: undefined }} className="rounded-full border border-border/80 bg-background/75 px-3.5 py-2 font-medium backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:bg-background">Sourcing markets</Link>
+            {categories.slice(0, 2).map((category) => <Link key={category.id} to="/shop" search={{ q: undefined, category: category.id, channel: undefined, region: undefined }} className="rounded-full border border-border/80 bg-background/75 px-3.5 py-2 font-medium backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:bg-background">{category.name}</Link>)}
           </div>
           <a href="#featured" className="hero-enter hero-enter-5 mt-9 inline-flex items-center gap-2 text-xs font-medium text-muted-foreground transition hover:text-foreground">Scroll to explore <ArrowDown className="size-3.5 animate-bounce" aria-hidden /></a>
         </div>
@@ -115,7 +115,7 @@ function Home() {
         <section className="mx-auto mt-24 max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Explore the catalog</p><h2 className="mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">A little of everything.</h2></div><p className="max-w-sm text-sm leading-6 text-muted-foreground">Choose a department, then keep your preferred shopping channel in view.</p></div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {categories.map((category, i) => <Link key={category.id} to="/shop" search={{ q: undefined, category: category.id, channel: undefined }} className="editorial-card group flex min-h-28 flex-col justify-between rounded-2xl border border-border bg-card p-4 sm:min-h-36 sm:p-5">
+            {categories.map((category, i) => <Link key={category.id} to="/shop" search={{ q: undefined, category: category.id, channel: undefined, region: undefined }} className="editorial-card group flex min-h-28 flex-col justify-between rounded-2xl border border-border bg-card p-4 sm:min-h-36 sm:p-5">
               <span className="font-display text-3xl text-gold/80">0{i + 1}</span><span className="flex items-center justify-between gap-2 text-sm font-medium">{category.name}<ArrowUpRight className="size-4 text-muted-foreground transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-foreground" aria-hidden /></span>
             </Link>)}
             {!categories.length && <Link to="/shop" className="editorial-card flex min-h-28 items-end justify-between rounded-2xl border border-border bg-card p-5 text-sm font-medium">Explore all products <ArrowUpRight className="size-4" aria-hidden /></Link>}
@@ -125,10 +125,10 @@ function Home() {
 
       <Reveal>
         <section className="mx-auto mt-24 max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="mb-8 max-w-2xl"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Two ways to find it</p><h2 className="mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">Choose your kind of discovery.</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Keep the original Shanta marketplace and Dubai sourcing journeys, with clear prices and terms in both.</p></div>
+          <div className="mb-8 max-w-2xl"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Two ways to find it</p><h2 className="mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">Choose your kind of discovery.</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Shop seller listings from different markets or browse Shanta-sourced finds. Each listing shows where it comes from.</p></div>
           <div className="grid gap-4 lg:grid-cols-2">
-            <ChannelCard channel="seller" image={sellerFeature ? productImage(sellerFeature) : oudImage} eyebrow="From sellers in Ethiopia" title="Good finds, close to home." detail="Browse seller-set prices and preorder terms. The deposit due and remaining balance are clear before you create an order." link="Explore local sellers" />
-            <ChannelCard channel="sourcing" image={sourcingFeature ? productImage(sourcingFeature) : watchImage} eyebrow="Sourced through Dubai" title="Looking for something special?" detail="Explore products Shanta sources through verified Dubai partners and follow your request as it moves forward." link="Discover Dubai sourcing" />
+            <ChannelCard channel="seller" image={sellerFeature ? productImage(sellerFeature) : oudImage} eyebrow="Seller listings by market" title="Good finds, from near and far." detail="Browse seller-set prices and preorder terms. Every listing carries a market region and country so you can see where it comes from." link="Explore seller listings" />
+            <ChannelCard channel="sourcing" image={sourcingFeature ? productImage(sourcingFeature) : watchImage} eyebrow="Shanta-sourced finds" title="Looking for something special?" detail="Explore products sourced through Shanta partners. Dubai remains one market, with each find labeled by its location." link="Explore sourcing finds" />
           </div>
         </section>
       </Reveal>
@@ -139,7 +139,7 @@ function Home() {
           <div className="reveal-stagger mt-10 grid grid-cols-1 overflow-hidden rounded-3xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
             {[
               { icon: BadgeCheck, title: "Verified sellers", detail: "Local listings come from reviewed Shanta sellers." },
-              { icon: Sparkles, title: "Two distinct channels", detail: "Shop local listings or request a Dubai-sourced find." },
+              { icon: Sparkles, title: "Two distinct channels", detail: "See the region and country for every listing." },
               { icon: ShieldCheck, title: "Terms before ordering", detail: "Review ETB price, deposit due and remaining balance." },
               { icon: Truck, title: "Order progress", detail: "Follow the next steps from your account." },
             ].map(({ icon: Icon, title, detail }) => <div key={title} className="bg-background p-6 sm:p-7 lg:p-8"><Icon className="size-5" strokeWidth={1.5} aria-hidden /><h3 className="mt-6 font-display text-xl">{title}</h3><p className="mt-2 text-sm leading-5 text-muted-foreground">{detail}</p></div>)}

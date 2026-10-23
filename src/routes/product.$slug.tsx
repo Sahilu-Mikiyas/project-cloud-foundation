@@ -12,12 +12,13 @@ import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { ProductMediaGallery } from "@/components/ProductMediaGallery";
 import { Reveal } from "@/components/Reveal";
+import { marketLocation, marketRegionLabel } from "@/lib/markets";
 
 export const Route = createFileRoute("/product/$slug")({
   head: () => ({
     meta: [
       { title: "Product — Shanta" },
-      { name: "description", content: "Explore seller preorders and Dubai sourcing products with clear prices and order terms." },
+      { name: "description", content: "Explore Shanta listings by market with clear ETB prices and order terms." },
       { property: "og:title", content: "Product — Shanta" },
       { property: "og:description", content: "Explore product details, seller/source and transparent order terms." },
     ],
@@ -103,13 +104,18 @@ function ProductPage() {
       <div className="md:col-span-5 md:pt-5">
         <div className="flex flex-wrap items-center gap-2">
         <p className="rounded-full bg-secondary px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground/75">
-          {p.listing_type === "seller" ? "Local seller preorder" : "Dubai sourcing"}
+          {p.listing_type === "seller" ? "Seller preorder" : "Shanta sourcing"}
         </p>
         {p.brand && <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{p.brand}</p>}
         </div>
         <h1 className="mt-4 text-balance font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">{p.name}</h1>
         <p className="tabular mt-4 text-3xl font-semibold tracking-tight">{formatEtb(unit)}</p>
         <p className="mt-5 leading-7 text-muted-foreground">{p.description}</p>
+        <div className="mt-5 rounded-2xl border border-border bg-card p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">Market</p>
+          <p className="mt-1 font-medium">{marketLocation(p.market_city, p.market_country)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{marketRegionLabel(p.market_region)}</p>
+        </div>
 
         {variants.length > 0 && (
           <div className="mt-8 border-t border-border pt-6">

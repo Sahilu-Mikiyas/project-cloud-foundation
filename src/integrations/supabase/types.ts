@@ -121,6 +121,9 @@ export type Database = {
           deposit_etb_cents: number
           id: string
           idempotency_key: string | null
+          market_region: string
+          market_country: string
+          market_city: string | null
           order_type: "sourcing" | "seller_listing"
           reference: string
           request_hash: string | null
@@ -137,6 +140,9 @@ export type Database = {
           deposit_etb_cents: number
           id?: string
           idempotency_key?: string | null
+          market_region?: string
+          market_country?: string
+          market_city?: string | null
           order_type?: "sourcing" | "seller_listing"
           reference?: string
           request_hash?: string | null
@@ -153,6 +159,9 @@ export type Database = {
           deposit_etb_cents?: number
           id?: string
           idempotency_key?: string | null
+          market_region?: string
+          market_country?: string
+          market_city?: string | null
           order_type?: "sourcing" | "seller_listing"
           reference?: string
           request_hash?: string | null
@@ -429,6 +438,9 @@ export type Database = {
           image_url: string | null
           is_published: boolean
           listing_type: "sourcing" | "seller"
+          market_region: string
+          market_country: string
+          market_city: string | null
           name: string
           price_etb_cents: number
           seller_user_id: string | null
@@ -446,6 +458,9 @@ export type Database = {
           image_url?: string | null
           is_published?: boolean
           listing_type?: "sourcing" | "seller"
+          market_region?: string
+          market_country?: string
+          market_city?: string | null
           name: string
           price_etb_cents: number
           seller_user_id?: string | null
@@ -463,6 +478,9 @@ export type Database = {
           image_url?: string | null
           is_published?: boolean
           listing_type?: "sourcing" | "seller"
+          market_region?: string
+          market_country?: string
+          market_city?: string | null
           name?: string
           price_etb_cents?: number
           seller_user_id?: string | null
@@ -542,6 +560,8 @@ export type Database = {
           business_name: string
           created_at: string
           id: string
+          market_region: string
+          market_country: string
           notes: string | null
           phone: string | null
           reviewed_at: string | null
@@ -553,6 +573,8 @@ export type Database = {
           business_name: string
           created_at?: string
           id?: string
+          market_region?: string
+          market_country?: string
           notes?: string | null
           phone?: string | null
           reviewed_at?: string | null
@@ -564,6 +586,8 @@ export type Database = {
           business_name?: string
           created_at?: string
           id?: string
+          market_region?: string
+          market_country?: string
           notes?: string | null
           phone?: string | null
           reviewed_at?: string | null
@@ -666,6 +690,24 @@ export type Database = {
           _deposit_percent: number
           _description: string
           _image_url: string
+          _name: string
+          _price_etb_cents: number
+          _slug: string
+          _variant_labels: string[]
+        }
+        Returns: string
+      }
+      create_seller_listing_with_market: {
+        Args: {
+          _brand: string
+          _category_id: string | null
+          _delivery_days: number
+          _deposit_percent: number
+          _description: string
+          _image_url: string
+          _market_city: string | null
+          _market_country: string
+          _market_region: string
           _name: string
           _price_etb_cents: number
           _slug: string

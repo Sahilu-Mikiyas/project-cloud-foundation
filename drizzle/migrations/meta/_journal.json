@@ -78,6 +78,13 @@
       "when": 1792672400000,
       "tag": "0010_listing_media_moderation",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792768051000,
+      "tag": "0011_global_market_classification",
+      "breakpoints": true
     }
   ]
 }

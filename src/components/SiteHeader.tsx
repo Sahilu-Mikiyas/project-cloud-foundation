@@ -46,8 +46,8 @@ export function SiteHeader() {
 
         <nav aria-label="Main navigation" className="hidden items-center gap-0.5 lg:flex">
           <Link to="/shop" className={navLink}>Shop</Link>
-          <Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller" }} className={navLink}>Local sellers</Link>
-          <Link to="/shop" search={{ q: undefined, category: undefined, channel: "sourcing" }} className={navLink}>Dubai sourcing</Link>
+          <Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller", region: undefined }} className={navLink}>Local sellers</Link>
+          <Link to="/shop" search={{ q: undefined, category: undefined, channel: "sourcing", region: undefined }} className={navLink}>Sourcing markets</Link>
           <div className="relative">
             <button type="button" aria-expanded={discoverOpen} onClick={() => setDiscoverOpen((open) => !open)} className={`${navLink} inline-flex items-center gap-1`}>
               Discover <ChevronDown className={`size-3.5 transition-transform duration-300 ${discoverOpen ? "rotate-180" : ""}`} aria-hidden />
@@ -84,8 +84,8 @@ export function SiteHeader() {
       {mobileOpen && <nav aria-label="Mobile navigation" className="mobile-menu border-t border-border bg-background/95 px-4 py-3 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-7xl flex-col gap-1">
           <Link to="/shop" onClick={closeMenus} className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary">Shop all</Link>
-          <Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller" }} onClick={closeMenus} className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary">Local sellers</Link>
-          <Link to="/shop" search={{ q: undefined, category: undefined, channel: "sourcing" }} onClick={closeMenus} className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary">Dubai sourcing</Link>
+          <Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller", region: undefined }} onClick={closeMenus} className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary">Local sellers</Link>
+          <Link to="/shop" search={{ q: undefined, category: undefined, channel: "sourcing", region: undefined }} onClick={closeMenus} className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary">Sourcing markets</Link>
           <a href="/#how-it-works" onClick={closeMenus} className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary">How Shanta works</a>
           <Link to="/partner" onClick={closeMenus} className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary">{isSupplier ? "Partner workspace" : "Sell with Shanta"}</Link>
           {isAdmin && <Link to="/admin" onClick={closeMenus} className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary">Operations</Link>}
@@ -105,9 +105,9 @@ export function SiteFooter() {
           <div>
             <Link to="/" className="font-display text-3xl font-medium tracking-tight">Shanta<span className="text-gold">.</span></Link>
             <p className="mt-4 max-w-md font-display text-3xl leading-tight text-background/90 sm:text-4xl">Good finds for the life you’re building.</p>
-            <p className="mt-4 max-w-sm text-sm leading-6 text-background/60">A thoughtful marketplace for local seller preorders and special finds from Dubai.</p>
+            <p className="mt-4 max-w-sm text-sm leading-6 text-background/60">A thoughtful marketplace for seller preorders and finds from markets around the world.</p>
           </div>
-          <div className="space-y-3 text-sm text-background/70"><p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-gold">Explore</p><p><Link to="/shop" className="transition-colors hover:text-white">Shop all</Link></p><p><Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller" }} className="transition-colors hover:text-white">Local sellers</Link></p><p><Link to="/shop" search={{ q: undefined, category: undefined, channel: "sourcing" }} className="transition-colors hover:text-white">Dubai sourcing</Link></p><p><a href="/#how-it-works" className="transition-colors hover:text-white">How it works</a></p></div>
+          <div className="space-y-3 text-sm text-background/70"><p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-gold">Explore</p><p><Link to="/shop" className="transition-colors hover:text-white">Shop all</Link></p><p><Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller", region: undefined }} className="transition-colors hover:text-white">Local sellers</Link></p><p><Link to="/shop" search={{ q: undefined, category: undefined, channel: "sourcing", region: undefined }} className="transition-colors hover:text-white">Sourcing markets</Link></p><p><a href="/#how-it-works" className="transition-colors hover:text-white">How it works</a></p></div>
           <div className="space-y-3 text-sm text-background/70"><p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-gold">Join Shanta</p><p><Link to="/partner" className="transition-colors hover:text-white">Sell with Shanta</Link></p><p><Link to="/partner" className="transition-colors hover:text-white">Become a sourcing partner</Link></p><p><Link to="/account" className="transition-colors hover:text-white">Track an order</Link></p><p className="pt-3 text-xs text-background/45">Clear ETB prices · Deposit terms before you order</p></div>
         </div>
         <div className="flex flex-col justify-between gap-3 pt-6 text-xs text-background/45 sm:flex-row"><span>© {new Date().getFullYear()} Shanta</span><span>Made for confident shopping in Ethiopia.</span></div>
