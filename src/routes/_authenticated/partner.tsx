@@ -258,6 +258,8 @@ function SellerListings({ userId }: { userId: string }) {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [priceEdit, setPriceEdit] = useState({ price: "", deposit_percent: "" });
+  const [marketEditingId, setMarketEditingId] = useState<string | null>(null);
+  const [marketEdit, setMarketEdit] = useState({ market_region: "africa", market_country: "Ethiopia", market_city: "" });
   const [inventoryEdits, setInventoryEdits] = useState<Record<string, string>>({});
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -360,6 +362,24 @@ function SellerListings({ userId }: { userId: string }) {
     if (error) { toast.error(error.message); return; }
     toast.success("Listing price updated");
     setEditingId(null);
+    qc.invalidateQueries({ queryKey: ["seller-listings", userId] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+  };
+
+  const saveMarket = async (id: string) => {
+    const country = marketEdit.market_country.trim();
+    const city = marketEdit.market_city.trim();
+    if (country.length < 2 || country.length > 80) { toast.error("Enter a country between 2 and 80 characters"); return; }
+    if (city && (city.length < 2 || city.length > 80)) { toast.error("Enter a city between 2 and 80 characters"); return; }
+    const { data, error } = await supabase.from("products").update({
+      market_region: marketEdit.market_region,
+      market_country: country,
+      market_city: city || null,
+    }).eq("id", id).eq("seller_user_id", userId).eq("listing_type", "seller").select("id").maybeSingle();
+    if (error) { toast.error(error.message); return; }
+    if (!data) { toast.error("This listing could not be updated. Refresh and try again."); return; }
+    toast.success("Listing market updated");
+    setMarketEditingId(null);
     qc.invalidateQueries({ queryKey: ["seller-listings", userId] });
     qc.invalidateQueries({ queryKey: ["products"] });
   };
@@ -497,6 +517,15 @@ function SellerListings({ userId }: { userId: string }) {
               <p className="font-medium">{listing.name}</p>
               <p className="tabular text-sm text-muted-foreground">{formatEtb(listing.price_etb_cents)} · {listing.deposit_percent}% deposit · {listing.product_variants.length} options</p>
               <p className="mt-1 text-xs text-muted-foreground">{listing.market_city ? `${listing.market_city}, ` : ""}{listing.market_country} · {marketRegionLabel(listing.market_region)}</p>
+              {marketEditingId === listing.id && (
+                <div className="mt-3 grid gap-3 rounded-xl border bg-card p-3 sm:grid-cols-2">
+                  <p className="text-xs leading-5 text-muted-foreground sm:col-span-2">This changes the market shown on your listing. Orders already placed keep their saved market details.</p>
+                  <div className="space-y-1.5"><Label htmlFor={`market-region-${listing.id}`}>Market region</Label><Select value={marketEdit.market_region} onValueChange={(market_region) => setMarketEdit({ ...marketEdit, market_region })}><SelectTrigger id={`market-region-${listing.id}`}><SelectValue /></SelectTrigger><SelectContent>{MARKET_REGIONS.map((market) => <SelectItem key={market.value} value={market.value}>{market.label}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-1.5"><Label htmlFor={`market-country-${listing.id}`}>Country</Label><Input id={`market-country-${listing.id}`} maxLength={80} value={marketEdit.market_country} onChange={(event) => setMarketEdit({ ...marketEdit, market_country: event.target.value })} /></div>
+                  <div className="space-y-1.5"><Label htmlFor={`market-city-${listing.id}`}>City (optional)</Label><Input id={`market-city-${listing.id}`} maxLength={80} value={marketEdit.market_city} onChange={(event) => setMarketEdit({ ...marketEdit, market_city: event.target.value })} /></div>
+                  <div className="flex items-end gap-2"><Button type="button" size="sm" onClick={() => void saveMarket(listing.id)}>Save market</Button><Button type="button" size="sm" variant="ghost" onClick={() => setMarketEditingId(null)}>Cancel</Button></div>
+                </div>
+              )}
               <div className="mt-2 flex flex-wrap gap-2">
                 {listing.product_variants.map((variant) => (
                   <div key={variant.id} className="flex flex-wrap items-center gap-2 rounded-md bg-muted px-2 py-1.5 text-xs">
@@ -529,6 +558,12 @@ function SellerListings({ userId }: { userId: string }) {
                 setEditingId(listing.id);
                 setPriceEdit({ price: (listing.price_etb_cents / 100).toFixed(2), deposit_percent: String(listing.deposit_percent) });
               }}>Edit price</Button>
+            )}
+            {marketEditingId !== listing.id && (
+              <Button type="button" size="sm" variant="outline" onClick={() => {
+                setMarketEditingId(listing.id);
+                setMarketEdit({ market_region: listing.market_region, market_country: listing.market_country, market_city: listing.market_city ?? "" });
+              }}>Edit market</Button>
             )}
             <label className="flex items-center gap-2 text-sm">
               {listing.is_published ? "Published" : "Draft"}
