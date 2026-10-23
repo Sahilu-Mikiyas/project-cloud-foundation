@@ -93,7 +93,7 @@ Every shopper-facing product and journey should make these distinctions clear:
   preserve permissions and transition rules.
 - Provide clear empty, loading, retry and permission-denied states.
 
-### R4 — Seller workspace and storefront (current)
+### R4 — Seller workspace and storefront (complete)
 
 - Classify seller tasks into overview, listings, preorders, support and account
   access. The current workspace provides a summary/action queue, focused listing
@@ -114,13 +114,18 @@ Every shopper-facing product and journey should make these distinctions clear:
   Keep the UI accurate to this limitation; schedule dates and richer lifecycle
   states require a separate data/workflow design.
 
-### R5 — Supplier and operations workspaces
+### R5 — Supplier and operations workspaces (current)
 
-- Group supplier application and eligible sourcing assignment work without
-  exposing seller preorders or unauthorized buyer information.
-- Organize admin work into queues for seller review, media, orders, support,
-  cancellations, suppliers and audit history.
+- Group the verified sourcing-partner experience into overview, open Dubai
+  sourcing requests and partner profile. Keep the application status visible
+  and separate sourcing requests from seller preorders.
+- Make operations open on an actionable overview with counts for pending seller
+  decisions, stalled fulfillment, support cases and cancellations.
+- Keep admin areas for orders, catalog, sourcing partners, sellers, support,
+  media review and audit history clearly named and easy to navigate.
 - Preserve reason capture, actor/time history and database-controlled decisions.
+- Do not add sourcing request claiming, assignment fee payment, or new admin
+  actions as part of this workspace redesign.
 
 ### R6 — Responsive and accessibility polish
 

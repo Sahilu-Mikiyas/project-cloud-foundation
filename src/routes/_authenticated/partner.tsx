@@ -51,9 +51,9 @@ function Partner() {
       return data;
     },
   });
-  const { data: openOrders = [] } = useQuery({
+  const { data: openOrders = [], isLoading: openOrdersLoading } = useQuery({
     queryKey: ["open-orders"],
-    enabled: isSupplier,
+    enabled: isSupplier && supplier?.status === "verified",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
@@ -67,6 +67,7 @@ function Partner() {
 
   const [supplierForm, setSupplierForm] = useState({ business_name: "", phone: "", base_city: "Dubai", notes: "" });
   const [sellerForm, setSellerForm] = useState({ business_name: "", phone: "", description: "" });
+  const [supplierView, setSupplierView] = useState<"overview" | "orders" | "profile">("overview");
   const [submitting, setSubmitting] = useState<"supplier" | "seller" | null>(null);
 
   if (loadingSupplier || loadingSeller) return <div className="mx-auto max-w-4xl px-4 py-12">Loading partner portal…</div>;
@@ -163,24 +164,54 @@ function Partner() {
               <StatusBadge status={supplier.status} label={statusLabel[supplier.status]} />
             </div>
             {supplier.status === "pending" && <p className="mt-3 text-sm text-muted-foreground">Your sourcing partner application is under review.</p>}
+            {supplier.status === "rejected" && <p className="mt-3 text-sm text-muted-foreground">This application was not approved. Contact Shanta support if you need help.</p>}
+            {supplier.status === "suspended" && <p className="mt-3 text-sm text-muted-foreground">Sourcing assignments are unavailable while this account is suspended.</p>}
           </div>
         )}
-        {isSupplier && (
-          <div className="mt-8">
-            <h3 className="font-semibold">Open sourcing orders</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Order claims and per-assignment fee payments will be added in a later stage.</p>
-            <div className="mt-4 divide-y rounded-md border bg-background">
-              {openOrders.length === 0 && <p className="p-5 text-sm text-muted-foreground">No open sourcing orders right now.</p>}
-              {openOrders.map((o) => (
-                <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                  <div>
-                    <p className="tabular text-xs text-muted-foreground">{o.reference}</p>
-                    <p className="font-medium">{o.order_items.map((i) => `${i.product_name} (${i.variant_label}) × ${i.quantity}`).join(", ")}</p>
-                  </div>
-                  <span className="tabular text-sm">{formatEtb(o.subtotal_etb_cents)}</span>
-                </div>
+        {isSupplier && supplier?.status === "verified" && (
+          <div className="mt-6 overflow-hidden rounded-3xl border bg-background">
+            <div className="grid gap-5 border-b p-5 md:grid-cols-[1fr_auto] md:items-end md:p-6">
+              <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Dubai sourcing</p><h3 className="mt-1 font-display text-2xl">Partner workspace</h3><p className="mt-1 text-sm text-muted-foreground">Review eligible sourcing requests and keep your partner details current.</p></div>
+              <div className="rounded-2xl bg-secondary/60 px-4 py-3"><p className="text-xs text-muted-foreground">Open requests</p><p className="mt-1 font-display text-2xl tabular-nums">{openOrdersLoading ? "—" : openOrders.length}</p></div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto border-b px-4" role="tablist" aria-label="Sourcing partner workspace">
+              {([["overview", "Overview"], ["orders", "Open requests"], ["profile", "Partner profile"]] as const).map(([tab, label]) => (
+                <button key={tab} type="button" role="tab" aria-selected={supplierView === tab} aria-controls={`supplier-panel-${tab}`} onKeyDown={(event) => {
+                  if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+                  event.preventDefault();
+                  const tabs = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []);
+                  const currentIndex = tabs.indexOf(event.currentTarget);
+                  const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+                  tabs[nextIndex]?.focus();
+                  tabs[nextIndex]?.click();
+                }} onClick={() => setSupplierView(tab)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors ${supplierView === tab ? "border-gold text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{label}</button>
               ))}
             </div>
+            <section id="supplier-panel-overview" role="tabpanel" hidden={supplierView !== "overview"} className="grid gap-4 p-5 md:grid-cols-2 md:p-6">
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your sourcing path</p><p className="mt-2 font-display text-xl">A request at a time.</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Review the order details and delivery expectations before taking part in an eligible Dubai sourcing request.</p></div>
+              <div className="rounded-2xl border p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current access</p><p className="mt-2 font-medium">{supplier.business_name}</p><p className="mt-1 text-sm text-muted-foreground">{supplier.base_city} · verified partner</p><Button className="mt-4" variant="outline" onClick={() => setSupplierView("orders")}>View open requests</Button></div>
+              <p className="text-xs leading-5 text-muted-foreground md:col-span-2">Request claiming and assignment fee payments are not available in this workspace yet. Existing order and payment rules remain unchanged.</p>
+            </section>
+            <section id="supplier-panel-orders" role="tabpanel" hidden={supplierView !== "orders"} className="p-5 md:p-6">
+              <h4 className="font-display text-xl">Requests open for assignment</h4><p className="mt-1 text-sm text-muted-foreground">These are Dubai sourcing orders only. Seller preorders are handled in the seller workspace.</p>
+              <div className="mt-4 divide-y rounded-2xl border">
+                {openOrdersLoading && <p className="p-5 text-sm text-muted-foreground">Loading open sourcing requests…</p>}
+                {!openOrdersLoading && openOrders.length === 0 && <p className="p-5 text-sm text-muted-foreground">No open sourcing requests right now.</p>}
+                {openOrders.map((o) => (
+                  <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                    <div><p className="tabular text-xs text-muted-foreground">{o.reference}</p><p className="font-medium">{o.order_items.map((i) => `${i.product_name} (${i.variant_label}) × ${i.quantity}`).join(", ")}</p></div>
+                    <span className="tabular text-sm">{formatEtb(o.subtotal_etb_cents)}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section id="supplier-panel-profile" role="tabpanel" hidden={supplierView !== "profile"} className="grid gap-4 p-5 sm:grid-cols-2 md:p-6">
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Business name</p><p className="mt-1 font-medium">{supplier.business_name}</p></div>
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Base city</p><p className="mt-1 font-medium">{supplier.base_city}</p></div>
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Partner phone</p><p className="mt-1 font-medium">{supplier.phone}</p></div>
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Application notes</p><p className="mt-1 font-medium">{supplier.notes || "No notes provided"}</p></div>
+              <Link to="/account" className="text-sm font-medium underline-offset-4 hover:underline sm:col-span-2">Go to account, orders and notifications</Link>
+            </section>
           </div>
         )}
       </section>
