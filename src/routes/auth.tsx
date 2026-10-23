@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import "@lovable.dev/cloud-auth-js/styles.css";
@@ -7,6 +7,8 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ArrowRight, BadgeCheck, PackageCheck } from "lucide-react";
+import { heroImage } from "@/lib/product-images";
 
 type Search = { next?: string | undefined };
 
@@ -74,15 +76,25 @@ function AuthPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16">
-      <h1 className="text-3xl font-extrabold">{mode === "up" ? "Create account" : mode === "forgot" ? "Reset password" : "Welcome back"}</h1>
-      <p className="mt-2 text-muted-foreground">Reserve products, track orders, or join as a sourcing partner.</p>
+    <div className="auth-shell mx-auto grid max-w-6xl gap-4 px-4 py-8 sm:py-10 lg:min-h-[calc(100svh-4rem)] lg:grid-cols-[1.05fr_.95fr]">
+      <aside className="relative hidden min-h-[38rem] flex-col justify-between overflow-hidden rounded-[2rem] bg-foreground p-8 text-background lg:flex xl:p-12">
+        <img src={heroImage} alt="" className="absolute inset-0 size-full object-cover opacity-65" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/25" />
+        <div className="relative"><Link to="/" className="font-display text-2xl">Shanta<span className="text-gold">.</span></Link><p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">Thoughtful finds, closer to home</p></div>
+        <div className="relative max-w-xl"><p className="font-display text-5xl leading-[1.05] xl:text-6xl">Shop local.<br /><span className="italic">Discover more.</span></p><p className="mt-5 max-w-md text-sm leading-6 text-white/75">From seller-set prices and preorder terms to products sourced from Dubai, keep every next step clear.</p><div className="mt-8 flex flex-wrap gap-2"><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur"><BadgeCheck className="size-3.5 text-gold" /> Verified sellers</span><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur"><PackageCheck className="size-3.5 text-gold" /> Clear order progress</span></div></div>
+        <Link to="/shop" className="relative inline-flex items-center gap-2 text-xs font-medium text-white/75 transition hover:text-white">Explore the collection <ArrowRight className="size-3.5" /></Link>
+      </aside>
+
+      <div className="mx-auto flex w-full max-w-md flex-col justify-center rounded-[2rem] border border-border bg-card px-6 py-8 shadow-card sm:px-10 sm:py-10">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Your Shanta account</p>
+      <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">{mode === "up" ? "Make yourself at home." : mode === "forgot" ? "Let’s get you back." : "Welcome back."}</h1>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">{mode === "up" ? "Create an account to place orders and follow your finds." : mode === "forgot" ? "We’ll send a link to reset your password." : "Sign in to follow your orders and discover new finds."}</p>
 
       {mode !== "forgot" && (
         <div className="mt-8 space-y-3">
           <Button variant="outline" className="h-11 w-full" onClick={() => oauth("google")}>Continue with Google</Button>
           <button type="button" className="lovable-auth-button w-full" onClick={() => oauth("lovable")}>Continue with Lovable</button>
-          <div className="flex items-center gap-3 py-2 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" /></div>
+          <div className="flex items-center gap-3 py-2 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or continue with email<span className="h-px flex-1 bg-border" /></div>
         </div>
       )}
 
@@ -108,6 +120,8 @@ function AuthPage() {
         ) : (
           <button className="underline-offset-4 hover:underline" onClick={() => setMode("in")}>Back to sign in</button>
         )}
+      </div>
+      <p className="mt-8 border-t border-border pt-5 text-center text-xs leading-5 text-muted-foreground">Your account keeps seller preorders and Dubai sourcing requests in one place.</p>
       </div>
     </div>
   );

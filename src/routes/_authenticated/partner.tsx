@@ -13,6 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatEtb } from "@/lib/format";
 import { SellerListingMediaManager } from "@/components/SellerListingMediaManager";
+import { Reveal } from "@/components/Reveal";
+import { BadgeCheck, Store, Truck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/partner")({
   head: () => ({
@@ -49,9 +51,9 @@ function Partner() {
       return data;
     },
   });
-  const { data: openOrders = [] } = useQuery({
+  const { data: openOrders = [], isLoading: openOrdersLoading } = useQuery({
     queryKey: ["open-orders"],
-    enabled: isSupplier,
+    enabled: isSupplier && supplier?.status === "verified",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
@@ -65,6 +67,7 @@ function Partner() {
 
   const [supplierForm, setSupplierForm] = useState({ business_name: "", phone: "", base_city: "Dubai", notes: "" });
   const [sellerForm, setSellerForm] = useState({ business_name: "", phone: "", description: "" });
+  const [supplierView, setSupplierView] = useState<"overview" | "orders" | "profile">("overview");
   const [submitting, setSubmitting] = useState<"supplier" | "seller" | null>(null);
 
   if (loadingSupplier || loadingSeller) return <div className="mx-auto max-w-4xl px-4 py-12">Loading partner portal…</div>;
@@ -90,14 +93,19 @@ function Partner() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 md:px-8">
-      <h1 className="text-3xl font-extrabold">Seller & partner portal</h1>
-      <p className="mt-2 max-w-2xl text-muted-foreground">
-        Sell products through your own published listings, source Dubai orders for Shanta customers, or do both. These are separate roles and order flows.
-      </p>
+    <div className="workspace-page mx-auto max-w-6xl px-4 py-10 md:px-8 md:py-14">
+      <Reveal>
+      <div className="relative overflow-hidden rounded-[2rem] bg-foreground p-6 text-background shadow-elevated sm:p-9 md:p-12">
+        <div className="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-gold/20 blur-3xl" aria-hidden />
+        <div className="relative max-w-3xl"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">Your Shanta workspace</p><h1 className="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Make your next move.</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-background/65">Build a local seller storefront, source Dubai orders for Shanta customers, or take part in both. Each channel keeps its own order flow and terms.</p>
+          <div className="mt-7 grid gap-3 sm:grid-cols-3"><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-gold text-foreground"><Store className="size-4" /></span><span className="text-xs font-medium">List local products</span></div><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-white/10"><BadgeCheck className="size-4" /></span><span className="text-xs font-medium">Set price and deposit</span></div><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-white/10"><Truck className="size-4" /></span><span className="text-xs font-medium">Source Dubai orders</span></div></div>
+        </div>
+      </div>
+      </Reveal>
 
-      <section className="mt-10 rounded-md border bg-card p-5 md:p-7">
-        <h2 className="text-xl font-bold">Sell your products</h2>
+      <Reveal delay={90}>
+      <section className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-card md:p-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">For local sellers</p><h2 className="mt-2 font-display text-3xl font-medium sm:text-4xl">Sell your products</h2>
         <p className="mt-1 text-sm text-muted-foreground">Apply to publish products, set your ETB price and deposit percentage, and manage your listings.</p>
         {!seller ? (
           <form className="mt-6 grid max-w-2xl gap-4 md:grid-cols-2" onSubmit={applySeller}>
@@ -112,7 +120,7 @@ function Partner() {
             </Button>
           </form>
         ) : (
-          <div className="mt-6 rounded-md bg-background p-4">
+          <div className="mt-6 rounded-2xl bg-secondary/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">{seller.business_name}</p>
@@ -127,9 +135,11 @@ function Partner() {
           </div>
         )}
       </section>
+      </Reveal>
 
-      <section className="mt-10 rounded-md border bg-card p-5 md:p-7">
-        <h2 className="text-xl font-bold">Source Dubai orders</h2>
+      <Reveal delay={140}>
+      <section className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-card md:p-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">For sourcing partners</p><h2 className="mt-2 font-display text-3xl font-medium sm:text-4xl">Source Dubai orders</h2>
         <p className="mt-1 text-sm text-muted-foreground">Verified Dubai partners can take sourcing assignments and commit a separate fee for each order.</p>
         {!supplier ? (
           <form className="mt-6 grid max-w-2xl gap-4 md:grid-cols-2" onSubmit={applySupplier}>
@@ -145,7 +155,7 @@ function Partner() {
             </Button>
           </form>
         ) : (
-          <div className="mt-6 rounded-md bg-background p-4">
+          <div className="mt-6 rounded-2xl bg-secondary/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">{supplier.business_name}</p>
@@ -154,27 +164,58 @@ function Partner() {
               <StatusBadge status={supplier.status} label={statusLabel[supplier.status]} />
             </div>
             {supplier.status === "pending" && <p className="mt-3 text-sm text-muted-foreground">Your sourcing partner application is under review.</p>}
+            {supplier.status === "rejected" && <p className="mt-3 text-sm text-muted-foreground">This application was not approved. Contact Shanta support if you need help.</p>}
+            {supplier.status === "suspended" && <p className="mt-3 text-sm text-muted-foreground">Sourcing assignments are unavailable while this account is suspended.</p>}
           </div>
         )}
-        {isSupplier && (
-          <div className="mt-8">
-            <h3 className="font-semibold">Open sourcing orders</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Order claims and per-assignment fee payments will be added in a later stage.</p>
-            <div className="mt-4 divide-y rounded-md border bg-background">
-              {openOrders.length === 0 && <p className="p-5 text-sm text-muted-foreground">No open sourcing orders right now.</p>}
-              {openOrders.map((o) => (
-                <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                  <div>
-                    <p className="tabular text-xs text-muted-foreground">{o.reference}</p>
-                    <p className="font-medium">{o.order_items.map((i) => `${i.product_name} (${i.variant_label}) × ${i.quantity}`).join(", ")}</p>
-                  </div>
-                  <span className="tabular text-sm">{formatEtb(o.subtotal_etb_cents)}</span>
-                </div>
+        {isSupplier && supplier?.status === "verified" && (
+          <div className="mt-6 overflow-hidden rounded-3xl border bg-background">
+            <div className="grid gap-5 border-b p-5 md:grid-cols-[1fr_auto] md:items-end md:p-6">
+              <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Dubai sourcing</p><h3 className="mt-1 font-display text-2xl">Partner workspace</h3><p className="mt-1 text-sm text-muted-foreground">Review eligible sourcing requests and keep your partner details current.</p></div>
+              <div className="rounded-2xl bg-secondary/60 px-4 py-3"><p className="text-xs text-muted-foreground">Open requests</p><p className="mt-1 font-display text-2xl tabular-nums">{openOrdersLoading ? "—" : openOrders.length}</p></div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto border-b px-4" role="tablist" aria-label="Sourcing partner workspace">
+              {([["overview", "Overview"], ["orders", "Open requests"], ["profile", "Partner profile"]] as const).map(([tab, label]) => (
+                <button key={tab} type="button" role="tab" aria-selected={supplierView === tab} aria-controls={`supplier-panel-${tab}`} onKeyDown={(event) => {
+                  if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+                  event.preventDefault();
+                  const tabs = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []);
+                  const currentIndex = tabs.indexOf(event.currentTarget);
+                  const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+                  tabs[nextIndex]?.focus();
+                  tabs[nextIndex]?.click();
+                }} onClick={() => setSupplierView(tab)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors ${supplierView === tab ? "border-gold text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{label}</button>
               ))}
             </div>
+            <section id="supplier-panel-overview" role="tabpanel" hidden={supplierView !== "overview"} className="grid gap-4 p-5 md:grid-cols-2 md:p-6">
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your sourcing path</p><p className="mt-2 font-display text-xl">A request at a time.</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Review the order details and delivery expectations before taking part in an eligible Dubai sourcing request.</p></div>
+              <div className="rounded-2xl border p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current access</p><p className="mt-2 font-medium">{supplier.business_name}</p><p className="mt-1 text-sm text-muted-foreground">{supplier.base_city} · verified partner</p><Button className="mt-4" variant="outline" onClick={() => setSupplierView("orders")}>View open requests</Button></div>
+              <p className="text-xs leading-5 text-muted-foreground md:col-span-2">Request claiming and assignment fee payments are not available in this workspace yet. Existing order and payment rules remain unchanged.</p>
+            </section>
+            <section id="supplier-panel-orders" role="tabpanel" hidden={supplierView !== "orders"} className="p-5 md:p-6">
+              <h4 className="font-display text-xl">Requests open for assignment</h4><p className="mt-1 text-sm text-muted-foreground">These are Dubai sourcing orders only. Seller preorders are handled in the seller workspace.</p>
+              <div className="mt-4 divide-y rounded-2xl border">
+                {openOrdersLoading && <p className="p-5 text-sm text-muted-foreground">Loading open sourcing requests…</p>}
+                {!openOrdersLoading && openOrders.length === 0 && <p className="p-5 text-sm text-muted-foreground">No open sourcing requests right now.</p>}
+                {openOrders.map((o) => (
+                  <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                    <div><p className="tabular text-xs text-muted-foreground">{o.reference}</p><p className="font-medium">{o.order_items.map((i) => `${i.product_name} (${i.variant_label}) × ${i.quantity}`).join(", ")}</p></div>
+                    <span className="tabular text-sm">{formatEtb(o.subtotal_etb_cents)}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section id="supplier-panel-profile" role="tabpanel" hidden={supplierView !== "profile"} className="grid gap-4 p-5 sm:grid-cols-2 md:p-6">
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Business name</p><p className="mt-1 font-medium">{supplier.business_name}</p></div>
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Base city</p><p className="mt-1 font-medium">{supplier.base_city}</p></div>
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Partner phone</p><p className="mt-1 font-medium">{supplier.phone}</p></div>
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Application notes</p><p className="mt-1 font-medium">{supplier.notes || "No notes provided"}</p></div>
+              <Link to="/account" className="text-sm font-medium underline-offset-4 hover:underline sm:col-span-2">Go to account, orders and notifications</Link>
+            </section>
           </div>
         )}
       </section>
+      </Reveal>
     </div>
   );
 }
@@ -205,6 +246,7 @@ const emptyListing: ListingForm = {
 
 function SellerListings({ userId }: { userId: string }) {
   const qc = useQueryClient();
+  const [workspaceTab, setWorkspaceTab] = useState<"overview" | "listings" | "preorders" | "support">("overview");
   const [form, setForm] = useState<ListingForm>(emptyListing);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -239,6 +281,20 @@ function SellerListings({ userId }: { userId: string }) {
         .select("id, reference, status, seller_response, seller_responded_at, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)")
         .eq("seller_id", userId)
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const { data: sellerSupportCases = [] } = useQuery({
+    queryKey: ["seller-support-cases", userId, sellerOrders.map((order) => order.id).join(",")],
+    enabled: sellerOrders.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("support_cases")
+        .select("id, order_id, subject, category, status, updated_at")
+        .in("order_id", sellerOrders.map((order) => order.id))
+        .order("updated_at", { ascending: false })
+        .limit(20);
       if (error) throw error;
       return data ?? [];
     },
@@ -328,9 +384,74 @@ function SellerListings({ userId }: { userId: string }) {
     qc.invalidateQueries({ queryKey: ["unread-notifications", userId] });
   };
 
+  const publishedListings = listings.filter((listing) => listing.is_published).length;
+  const waitingForSeller = sellerOrders.filter((order) => order.status === "awaiting_customer_deposit" && order.seller_response === "pending").length;
+  const activeSupportCases = sellerSupportCases.filter((supportCase) => supportCase.status === "open" || supportCase.status === "in_progress").length;
+
   return (
     <div className="mt-6 border-t pt-6">
-      <h3 className="font-semibold">Your product listings</h3>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Seller studio</p>
+          <h3 className="mt-1 font-display text-2xl font-medium sm:text-3xl">Your local storefront</h3>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Advertise products before they are ready, set your price and deposit terms, and review incoming preorder requests. A preorder records interest; it does not collect payment.</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">All listings</p><p className="mt-1 font-display text-3xl tabular-nums">{listings.length}</p></div>
+        <div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Currently advertised</p><p className="mt-1 font-display text-3xl tabular-nums">{publishedListings}</p></div>
+        <div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Need your response</p><p className="mt-1 font-display text-3xl tabular-nums">{waitingForSeller}</p></div>
+        <div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Active support cases</p><p className="mt-1 font-display text-3xl tabular-nums">{activeSupportCases}</p></div>
+      </div>
+
+      <div className="mt-6 flex gap-2 overflow-x-auto border-b" role="tablist" aria-label="Seller workspace">
+        {([
+          ["overview", "Overview"],
+          ["listings", "Listings"],
+          ["preorders", `Preorders${waitingForSeller ? ` · ${waitingForSeller}` : ""}`],
+          ["support", `Support${activeSupportCases ? ` · ${activeSupportCases}` : ""}`],
+        ] as const).map(([tab, label]) => (
+          <button key={tab} type="button" role="tab" aria-selected={workspaceTab === tab} aria-controls={`seller-panel-${tab}`} onKeyDown={(event) => {
+            if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const tabs = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []);
+            const currentIndex = tabs.indexOf(event.currentTarget);
+            const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+            tabs[nextIndex]?.focus();
+            tabs[nextIndex]?.click();
+          }} onClick={() => setWorkspaceTab(tab)} className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${workspaceTab === tab ? "border-gold text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <section id="seller-panel-overview" role="tabpanel" hidden={workspaceTab !== "overview"} className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
+          <div className="rounded-3xl border bg-background p-5 md:p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Your next steps</p>
+            <h4 className="mt-2 font-display text-2xl">Keep your storefront moving.</h4>
+            <div className="mt-5 space-y-3">
+              <div className="flex items-start gap-3 rounded-2xl bg-secondary/55 p-4"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-gold text-xs font-semibold">01</span><div><p className="text-sm font-medium">Create and advertise a product</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Add photos, options, delivery estimates, your ETB price and the deposit percentage buyers will see.</p></div></div>
+              <div className="flex items-start gap-3 rounded-2xl bg-secondary/55 p-4"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-gold text-xs font-semibold">02</span><div><p className="text-sm font-medium">Review each preorder request</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Accept to confirm availability at the saved terms, or decline to cancel the unpaid request.</p></div></div>
+              <div className="flex items-start gap-3 rounded-2xl bg-secondary/55 p-4"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-gold text-xs font-semibold">03</span><div><p className="text-sm font-medium">Keep buyers informed</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Order updates and support conversations are available from each preorder.</p></div></div>
+            </div>
+            <p className="mt-4 rounded-xl border border-gold/30 bg-gold/10 p-3 text-xs leading-5 text-muted-foreground">Online deposit collection is not enabled yet. Buyers can submit a preorder and see the deposit due, but it is not marked paid.</p>
+          </div>
+          <div className="rounded-3xl border bg-background p-5 md:p-6">
+            <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Action queue</p><h4 className="mt-1 font-display text-2xl">Preorders to review</h4></div><BadgeCheck className="size-5 text-gold" aria-hidden /></div>
+            {waitingForSeller === 0 ? <p className="mt-5 rounded-2xl bg-secondary/55 p-4 text-sm text-muted-foreground">You are all caught up. New preorder requests will appear here.</p> : (
+              <div className="mt-4 space-y-3">{sellerOrders.filter((order) => order.status === "awaiting_customer_deposit" && order.seller_response === "pending").slice(0, 3).map((order) => (
+                <div key={order.id} className="rounded-2xl border p-4"><p className="tabular text-xs text-muted-foreground">{order.reference} · {new Date(order.created_at).toLocaleDateString()}</p><p className="mt-1 text-sm font-medium">{order.order_items.map((item) => `${item.product_name} × ${item.quantity}`).join(", ")}</p><p className="mt-1 text-xs text-muted-foreground">Deposit due: {formatEtb(order.deposit_etb_cents)} · not yet paid</p></div>
+              ))}</div>
+            )}
+            <Button className="mt-4 w-full" variant="outline" onClick={() => setWorkspaceTab("preorders")}>Open preorder queue</Button>
+            <Button className="mt-2 w-full" onClick={() => setWorkspaceTab("listings")}>Manage product listings</Button>
+            <Link to="/account" className="mt-4 block text-center text-sm font-medium underline-offset-4 hover:underline">Account, orders and notifications</Link>
+          </div>
+        </section>
+
+      <section id="seller-panel-listings" role="tabpanel" hidden={workspaceTab !== "listings"} className="mt-5">
+      <h3 className="font-display text-2xl font-medium">Your product listings</h3>
       <p className="mt-1 text-sm text-muted-foreground">Create a draft, choose its price and deposit, add listing details, then upload images for review before publishing.</p>
       <form onSubmit={createListing} className="mt-5 grid gap-3 rounded-md border bg-background p-4 md:grid-cols-2">
         <Field id="listing-name" label="Product name" required value={form.name} onChange={(name) => setForm({ ...form, name })} />
@@ -404,6 +525,9 @@ function SellerListings({ userId }: { userId: string }) {
           </div>
         ))}
       </div>
+      </section>
+
+      <section id="seller-panel-preorders" role="tabpanel" hidden={workspaceTab !== "preorders"} className="mt-5">
       <section className="mt-8">
         <h4 className="font-semibold">Orders for your listings</h4>
         <p className="mt-1 text-sm text-muted-foreground">Confirm whether you can fulfill a preorder at its listed terms. Acceptance does not mean the deposit was paid or that fulfillment has started. Customer contact details are not shown here.</p>
@@ -434,6 +558,21 @@ function SellerListings({ userId }: { userId: string }) {
           ))}
         </div>
       </section>
+      </section>
+
+      <section id="seller-panel-support" role="tabpanel" hidden={workspaceTab !== "support"} className="mt-5">
+        <div className="mb-4"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Customer care</p><h3 className="mt-1 font-display text-2xl font-medium">Order support</h3><p className="mt-1 text-sm text-muted-foreground">Continue private conversations attached to your seller orders. Buyer contact details are not shown in this queue.</p></div>
+        <div className="divide-y rounded-2xl border bg-background">
+          {sellerSupportCases.length === 0 && <p className="p-5 text-sm text-muted-foreground">No support conversations are attached to your orders.</p>}
+          {sellerSupportCases.map((supportCase) => (
+              <div key={supportCase.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
+              <div className="min-w-0"><p className="tabular text-xs text-muted-foreground">{sellerOrders.find((order) => order.id === supportCase.order_id)?.reference ?? "Seller order"} · Updated {new Date(supportCase.updated_at).toLocaleDateString()}</p><p className="mt-1 font-medium">{supportCase.subject}</p><p className="mt-1 text-xs text-muted-foreground">{supportCase.category.replaceAll("_", " ")}</p></div>
+              <div className="flex items-center gap-3"><StatusBadge status={supportCase.status} /><Link to="/account/orders/$id" params={{ id: supportCase.order_id }} className="text-sm font-medium underline-offset-4 hover:underline">Open conversation</Link></div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
+

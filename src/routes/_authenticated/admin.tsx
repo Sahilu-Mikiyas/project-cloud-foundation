@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatEtb, ORDER_STATUS_LABEL } from "@/lib/format";
 import { productImage } from "@/lib/product-images";
+import { Reveal } from "@/components/Reveal";
+import { Activity } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -31,17 +33,23 @@ function Admin() {
   if (loading) return <div className="mx-auto max-w-7xl px-4 py-12">Loading…</div>;
   if (!isAdmin) return <div className="mx-auto max-w-7xl px-4 py-24 text-center"><h1 className="text-2xl font-bold">Operations access only</h1><Link to="/" className="mt-4 inline-block underline">Go home</Link></div>;
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
-      <h1 className="text-3xl font-extrabold">Operations</h1>
-      <Tabs defaultValue="orders" className="mt-6">
-        <TabsList>
-          <TabsTrigger value="operations">Operations</TabsTrigger>
-          <TabsTrigger value="orders">Orders</TabsTrigger>
-          <TabsTrigger value="catalog">Catalog</TabsTrigger>
-          <TabsTrigger value="partners">Partners</TabsTrigger>
-          <TabsTrigger value="sellers">Sellers</TabsTrigger>
-          <TabsTrigger value="support">Support</TabsTrigger>
-          <TabsTrigger value="media">Media review</TabsTrigger>
+    <div className="workspace-page mx-auto max-w-7xl px-4 py-10 md:px-8 md:py-14">
+      <Reveal>
+      <div className="flex flex-col justify-between gap-5 rounded-[2rem] bg-foreground p-6 text-background shadow-elevated sm:flex-row sm:items-end sm:p-9 md:p-11">
+        <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">Shanta back office</p><h1 className="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Operations overview</h1><p className="mt-3 max-w-xl text-sm leading-6 text-background/65">Review orders, sellers, sourcing partners and support activity from one workspace.</p></div>
+        <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-xs text-background/70"><Activity className="size-4 text-gold" aria-hidden /> Operations workspace</div>
+      </div>
+      </Reveal>
+      <Reveal delay={100}>
+      <Tabs defaultValue="operations" className="mt-6">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-2xl border border-border bg-card p-1.5 shadow-card">
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="operations">Overview</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="orders">Orders</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="catalog">Catalog</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="partners">Sourcing partners</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="sellers">Sellers</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="support">Support</TabsTrigger>
+          <TabsTrigger className="rounded-xl px-4 py-2.5 data-[state=active]:bg-foreground data-[state=active]:text-background" value="media">Media review</TabsTrigger>
         </TabsList>
         <TabsContent value="operations"><OperationsQueue /></TabsContent>
         <TabsContent value="orders"><Orders /></TabsContent>
@@ -51,6 +59,7 @@ function Admin() {
         <TabsContent value="support"><SupportCases /></TabsContent>
         <TabsContent value="media"><MediaModeration /></TabsContent>
       </Tabs>
+      </Reveal>
     </div>
   );
 }
@@ -103,20 +112,26 @@ function OperationsQueue() {
   const stalled = orders.filter((o) => ["assigned", "purchased", "in_transit", "arrived", "ready_for_handover", "seller_preparing", "seller_in_delivery"].includes(o.status) && new Date(o.created_at).getTime() < staleBefore);
   const cancellations = orders.filter((o) => o.status === "cancelled");
   const queues = [
-    { id: "seller_decisions", label: "Seller decisions", count: pendingSeller.length },
-    { id: "stalled", label: "Stalled fulfillment · 7+ days", count: stalled.length },
-    { id: "suspended", label: "Suspended sellers", count: sellers.length },
-    { id: "cancellations", label: "Cancellations", count: cancellations.length },
-    { id: "support", label: "Open support cases", count: supportCases.length },
-    { id: "audit", label: "Recent admin actions", count: audit.length },
+    { id: "seller_decisions", label: "Seller decisions", count: pendingSeller.length, loading: ordersLoading },
+    { id: "stalled", label: "Stalled fulfillment · 7+ days", count: stalled.length, loading: ordersLoading },
+    { id: "suspended", label: "Suspended sellers", count: sellers.length, loading: sellersLoading },
+    { id: "cancellations", label: "Cancellations", count: cancellations.length, loading: ordersLoading },
+    { id: "support", label: "Open support cases", count: supportCases.length, loading: casesLoading },
+    { id: "audit", label: "Recent admin actions", count: audit.length, loading: auditLoading },
   ];
   const activeOrders = queue === "seller_decisions" ? pendingSeller : queue === "stalled" ? stalled : cancellations;
   const loading = (queue === "suspended" && sellersLoading) || (queue === "support" && casesLoading) || (queue === "audit" && auditLoading) || (!(["suspended", "support", "audit"].includes(queue)) && ordersLoading);
   return (
     <section className="mt-4 space-y-5">
-      <div><h2 className="text-lg font-bold">Operational queues</h2><p className="text-sm text-muted-foreground">Review pending work and items that need follow-up.</p></div>
+      <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Work that needs attention</p><h2 className="mt-1 font-display text-3xl font-medium">Operations overview</h2><p className="mt-1 text-sm text-muted-foreground">Start with open decisions and overdue work. Sourcing partners, sellers, media and audit history have their own sections above.</p></div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border bg-card p-4"><p className="text-xs text-muted-foreground">Seller preorders awaiting review</p><p className="mt-1 font-display text-3xl tabular-nums">{ordersLoading ? "—" : pendingSeller.length}</p></div>
+        <div className="rounded-2xl border bg-card p-4"><p className="text-xs text-muted-foreground">Fulfillment stalled · 7+ days</p><p className="mt-1 font-display text-3xl tabular-nums">{ordersLoading ? "—" : stalled.length}</p></div>
+        <div className="rounded-2xl border bg-card p-4"><p className="text-xs text-muted-foreground">Open support cases</p><p className="mt-1 font-display text-3xl tabular-nums">{casesLoading ? "—" : supportCases.length}</p></div>
+        <div className="rounded-2xl border bg-card p-4"><p className="text-xs text-muted-foreground">Cancelled orders</p><p className="mt-1 font-display text-3xl tabular-nums">{ordersLoading ? "—" : cancellations.length}</p></div>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {queues.map((item) => <Button key={item.id} type="button" variant={queue === item.id ? "default" : "outline"} className="h-auto justify-between gap-3 p-4" onClick={() => setQueue(item.id)}><span className="text-left whitespace-normal">{item.label}</span><span className="tabular-nums">{item.count}</span></Button>)}
+        {queues.map((item) => <Button key={item.id} type="button" variant={queue === item.id ? "default" : "outline"} className="h-auto justify-between gap-3 p-4" onClick={() => setQueue(item.id)}><span className="text-left whitespace-normal">{item.label}</span><span className="tabular-nums">{item.loading ? "—" : item.count}</span></Button>)}
       </div>
       <div className="divide-y rounded-md border bg-card">
         {loading && <p className="p-5 text-sm text-muted-foreground">Loading queue…</p>}
@@ -254,9 +269,9 @@ function Orders() {
     qc.invalidateQueries({ queryKey: ["admin-orders"] });
   };
   return (
-    <div className="mt-4 overflow-x-auto rounded-md border bg-card">
+      <div className="mt-4 overflow-x-auto rounded-2xl border bg-card">
       <table className="w-full text-sm">
-        <thead className="border-b text-left text-muted-foreground"><tr><th className="p-3">Reference</th><th className="p-3">Flow</th><th className="p-3">Items</th><th className="p-3 text-right">Total</th><th className="p-3 text-right">Deposit</th><th className="p-3">Status</th><th className="p-3">Change</th></tr></thead>
+        <thead className="border-b text-left text-muted-foreground"><tr><th className="p-3">Reference</th><th className="p-3">Flow</th><th className="p-3">Items</th><th className="p-3 text-right">Total</th><th className="p-3 text-right">Deposit due</th><th className="p-3">Status</th><th className="p-3">Change</th></tr></thead>
         <tbody className="divide-y">
           {data.length === 0 && <tr><td colSpan={7} className="p-6 text-muted-foreground">No orders yet.</td></tr>}
           {data.map((o) => (
@@ -279,6 +294,7 @@ function Orders() {
           ))}
         </tbody>
       </table>
+      <p className="px-4 pb-4 text-xs text-muted-foreground">Deposit figures are estimates. Online payment collection remains disabled.</p>
     </div>
   );
 }
@@ -429,3 +445,4 @@ function Sellers() {
     </div>
   );
 }
+

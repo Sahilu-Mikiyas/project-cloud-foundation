@@ -11,14 +11,15 @@ import { productImage } from "@/lib/product-images";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { ProductMediaGallery } from "@/components/ProductMediaGallery";
+import { Reveal } from "@/components/Reveal";
 
 export const Route = createFileRoute("/product/$slug")({
   head: () => ({
     meta: [
       { title: "Product — Shanta" },
-      { name: "description", content: "Reserve this product from Dubai with a deposit on Shanta." },
+      { name: "description", content: "Explore seller preorders and Dubai sourcing products with clear prices and order terms." },
       { property: "og:title", content: "Product — Shanta" },
-      { property: "og:description", content: "Reserve this product from Dubai with a deposit." },
+      { property: "og:description", content: "Explore product details, seller/source and transparent order terms." },
     ],
   }),
   component: ProductPage,
@@ -92,21 +93,26 @@ function ProductPage() {
   };
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-12 md:px-8">
+    <div className="mx-auto max-w-7xl px-4 pb-20 pt-6 md:px-8 md:pt-9">
+      <Link to="/shop" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground">← Back to the collection</Link>
+      <Reveal>
+      <div className="grid gap-8 md:grid-cols-12 md:gap-12">
       <div className="md:col-span-7">
         <ProductMediaGallery productId={p.id} productSlug={p.slug} productName={p.name} variantId={variantId} fallback={fallbackImage} />
       </div>
-      <div className="md:col-span-5 md:pt-6">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">{p.brand}</p>
-        <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-primary">
-          {p.listing_type === "seller" ? "Seller listing" : "Dubai sourcing"}
+      <div className="md:col-span-5 md:pt-5">
+        <div className="flex flex-wrap items-center gap-2">
+        <p className="rounded-full bg-secondary px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground/75">
+          {p.listing_type === "seller" ? "Local seller preorder" : "Dubai sourcing"}
         </p>
-        <h1 className="mt-2 text-3xl font-extrabold md:text-4xl">{p.name}</h1>
-        <p className="tabular mt-4 text-2xl font-semibold">{formatEtb(unit)}</p>
-        <p className="mt-6 text-muted-foreground">{p.description}</p>
+        {p.brand && <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{p.brand}</p>}
+        </div>
+        <h1 className="mt-4 text-balance font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">{p.name}</h1>
+        <p className="tabular mt-4 text-3xl font-semibold tracking-tight">{formatEtb(unit)}</p>
+        <p className="mt-5 leading-7 text-muted-foreground">{p.description}</p>
 
         {variants.length > 0 && (
-          <div className="mt-8">
+          <div className="mt-8 border-t border-border pt-6">
             <p className="mb-3 text-sm font-medium">Option</p>
             <div className="flex flex-wrap gap-2">
               {variants.map((x) => (
@@ -141,22 +147,29 @@ function ProductPage() {
           </div>
         </div>
 
-        <div className="mt-8 space-y-2 rounded-md bg-card p-5 text-sm">
+        <div className="mt-8 space-y-3 rounded-3xl border border-border bg-card p-5 text-sm shadow-card sm:p-6">
+          <div className="mb-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your order estimate</p><p className="mt-1 text-xs text-muted-foreground">{qty} {qty === 1 ? "item" : "items"} · ETB</p></div>
           <Row label="Order total" value={formatEtb(subtotal)} />
-          <Row label={`Reservation deposit (${p.deposit_percent}%)`} value={formatEtb(deposit)} strong />
-          <Row label="Balance on handover" value={formatEtb(subtotal - deposit)} />
-          <p className="pt-2 text-xs text-muted-foreground">Estimated delivery ~{p.delivery_days} days after a partner is assigned.</p>
+          <div className="my-2 border-t border-dashed border-border" />
+          <Row label={`Deposit due (${p.deposit_percent}%)`} value={formatEtb(deposit)} strong />
+          <Row label="Remaining balance" value={formatEtb(subtotal - deposit)} />
+          <div className="mt-4 rounded-2xl bg-secondary/70 p-4">
+            <p className="font-medium">Estimated delivery</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">About {p.delivery_days} days after a partner is assigned. Your order summary will include the final terms.</p>
+          </div>
         </div>
 
         <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId || (p.listing_type === "seller" && remaining === 0)} onClick={reserve}>
           {busy ? "Creating order…" : p.listing_type === "seller" ? user ? "Create preorder (deposit due)" : "Sign in to preorder" : user ? "Reserve order" : "Sign in to reserve"}
         </Button>
-        <p className="mt-3 text-center text-xs text-muted-foreground">
+        <p className="mt-3 text-center text-xs leading-5 text-muted-foreground">
           {p.listing_type === "seller"
-            ? "This creates an order and records the listed price and deposit. Online deposit collection is coming in the payment stage."
-            : "Deposit payment will be available soon. Your reservation is saved now."}
+            ? "Creating this preorder records the seller’s listed price and deposit terms. It does not collect payment."
+            : "This reservation records your request. Online deposit payment is not available yet."}
         </p>
       </div>
+      </div>
+      </Reveal>
     </div>
   );
 }
