@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/StatusBadge";
+import { MARKET_REGIONS, marketRegionLabel } from "@/lib/markets";
 import { formatEtb, ORDER_STATUS_LABEL } from "@/lib/format";
 import { productImage } from "@/lib/product-images";
 import { Reveal } from "@/components/Reveal";
@@ -70,7 +71,7 @@ function OperationsQueue() {
     queryKey: ["operations-orders"],
     queryFn: async () => {
       const { data, error } = await supabase.from("orders")
-        .select("id, reference, status, order_type, seller_response, created_at")
+        .select("id, reference, status, order_type, seller_response, created_at, market_country, market_city")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -138,7 +139,7 @@ function OperationsQueue() {
         {!loading && queue === "suspended" && (sellers.length ? sellers.map((seller) => <div key={seller.id} className="flex items-center justify-between gap-4 p-4"><span className="font-medium">{seller.business_name}</span><span className="text-sm text-muted-foreground">Suspended {seller.reviewed_at ? new Date(seller.reviewed_at).toLocaleDateString() : ""}</span></div>) : <p className="p-5 text-sm text-muted-foreground">No suspended sellers.</p>)}
         {!loading && queue === "support" && (supportCases.length ? supportCases.map((c) => <div key={c.id} className="flex items-center justify-between gap-4 p-4"><div><Link to="/account/orders/$id" params={{ id: c.order_id }} className="font-medium underline">{c.subject}</Link><p className="text-xs text-muted-foreground">{c.orders?.reference ?? "Order"} · {c.status.replaceAll("_", " ")}</p></div><span className="text-sm text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</span></div>) : <p className="p-5 text-sm text-muted-foreground">No open support cases.</p>)}
         {!loading && queue === "audit" && (audit.length ? audit.map((event) => <div key={event.id} className="flex flex-wrap items-start justify-between gap-3 p-4"><div><p className="font-medium">{event.action.replaceAll("_", " ")} · {event.entity_type.replaceAll("_", " ")}</p><p className="text-sm">{event.reason}</p><p className="text-xs text-muted-foreground">Admin {event.actor_id.slice(0, 8)} · Record {event.entity_id}</p></div><time className="text-xs text-muted-foreground">{new Date(event.created_at).toLocaleString()}</time></div>) : <p className="p-5 text-sm text-muted-foreground">No operational actions have been recorded.</p>)}
-        {!loading && !(["suspended", "support", "audit"].includes(queue)) && (activeOrders.length ? activeOrders.map((o) => <div key={o.id} className="flex items-center justify-between gap-4 p-4"><div><p className="font-medium">{o.reference}</p><p className="text-xs text-muted-foreground">{o.status.replaceAll("_", " ")} · {o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing"}</p></div><div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</span><Link to="/account/orders/$id" params={{ id: o.id }} className="text-sm underline">View</Link></div></div>) : <p className="p-5 text-sm text-muted-foreground">Nothing in this queue.</p>)}
+        {!loading && !(["suspended", "support", "audit"].includes(queue)) && (activeOrders.length ? activeOrders.map((o) => <div key={o.id} className="flex items-center justify-between gap-4 p-4"><div><p className="font-medium">{o.reference}</p><p className="text-xs text-muted-foreground">{o.status.replaceAll("_", " ")} · {o.order_type === "seller_listing" ? "Seller preorder" : "Sourcing"}</p></div><div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</span><Link to="/account/orders/$id" params={{ id: o.id }} className="text-sm underline">View</Link></div></div>) : <p className="p-5 text-sm text-muted-foreground">Nothing in this queue.</p>)}
       </div>
     </section>
   );
@@ -258,7 +259,7 @@ function Orders() {
   const qc = useQueryClient();
   const { data = [] } = useQuery({
     queryKey: ["admin-orders"],
-    queryFn: async () => (await supabase.from("orders").select("id, reference, order_type, status, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => (await supabase.from("orders").select("id, reference, order_type, status, subtotal_etb_cents, deposit_etb_cents, created_at, market_region, market_country, market_city, order_items(product_name, variant_label, quantity)").order("created_at", { ascending: false })).data ?? [],
   });
   const setStatus = async (id: string, status: string) => {
     const note = window.prompt(`Reason for changing this order to ${status.replaceAll("_", " ")}:`)?.trim();
@@ -277,7 +278,7 @@ function Orders() {
           {data.map((o) => (
             <tr key={o.id}>
               <td className="tabular p-3">{o.reference}</td>
-              <td className="p-3">{o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing"}</td>
+              <td className="p-3">{o.order_type === "seller_listing" ? "Seller preorder" : "Sourcing"}<span className="block text-xs text-muted-foreground">{o.market_city ? `${o.market_city}, ` : ""}{o.market_country} · {marketRegionLabel(o.market_region)}</span></td>
               <td className="p-3">{o.order_items.map((i) => `${i.product_name} (${i.variant_label}) × ${i.quantity}`).join(", ")}</td>
               <td className="tabular p-3 text-right">{formatEtb(o.subtotal_etb_cents)}</td>
               <td className="tabular p-3 text-right">{formatEtb(o.deposit_etb_cents)}</td>
@@ -299,7 +300,7 @@ function Orders() {
   );
 }
 
-const emptyProduct = { name: "", slug: "", brand: "", description: "", image_url: "", price: "", deposit_percent: "30", delivery_days: "14", category_id: "", variants: "" };
+const emptyProduct = { name: "", slug: "", brand: "", description: "", image_url: "", price: "", deposit_percent: "30", delivery_days: "14", category_id: "", variants: "", market_region: "middle_east", market_country: "United Arab Emirates", market_city: "Dubai" };
 
 function Catalog() {
   const qc = useQueryClient();
@@ -307,7 +308,7 @@ function Catalog() {
   const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: async () => (await supabase.from("categories").select("id, name").order("sort_order")).data ?? [] });
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products"],
-    queryFn: async () => (await supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, listing_type, is_published, product_variants(id)").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => (await supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, listing_type, is_published, market_region, market_country, market_city, product_variants(id)").order("created_at", { ascending: false })).data ?? [],
   });
 
   const create = async (e: React.FormEvent) => {
@@ -319,6 +320,7 @@ function Catalog() {
       name: f.name, slug, brand: f.brand || null, description: f.description || null, image_url: f.image_url || null,
       price_etb_cents: cents, deposit_percent: Number(f.deposit_percent), delivery_days: Number(f.delivery_days),
       category_id: f.category_id || null, is_published: false,
+      market_region: f.market_region, market_country: f.market_country.trim(), market_city: f.market_city.trim() || null,
     }).select("id").single();
     if (error) { toast.error(error.message); return; }
     const labels = (f.variants || "Standard").split(",").map((s) => s.trim()).filter(Boolean);
@@ -346,6 +348,8 @@ function Catalog() {
           <div className="space-y-1"><Label htmlFor="dep">Deposit %</Label><Input id="dep" type="number" min={0} max={100} value={f.deposit_percent} onChange={(e) => setF({ ...f, deposit_percent: e.target.value })} /></div>
           <div className="space-y-1"><Label htmlFor="days">Days</Label><Input id="days" type="number" min={1} value={f.delivery_days} onChange={(e) => setF({ ...f, delivery_days: e.target.value })} /></div>
         </div>
+        <div className="space-y-1"><Label htmlFor="catalog-market-region">Market region</Label><Select value={f.market_region} onValueChange={(market_region) => setF({ ...f, market_region })}><SelectTrigger id="catalog-market-region"><SelectValue /></SelectTrigger><SelectContent>{MARKET_REGIONS.map((market) => <SelectItem key={market.value} value={market.value}>{market.label}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label htmlFor="catalog-market-country">Market country</Label><Input id="catalog-market-country" required value={f.market_country} onChange={(e) => setF({ ...f, market_country: e.target.value })} /></div><div className="space-y-1"><Label htmlFor="catalog-market-city">Market city</Label><Input id="catalog-market-city" value={f.market_city} onChange={(e) => setF({ ...f, market_city: e.target.value })} /></div></div>
         <div className="space-y-1">
           <Label>Category</Label>
           <Select value={f.category_id} onValueChange={(v) => setF({ ...f, category_id: v })}>
@@ -362,7 +366,8 @@ function Catalog() {
             <img src={productImage(p)} alt="" className="h-16 w-14 rounded object-cover" />
             <div className="flex-1">
               <p className="font-medium">{p.name}</p>
-              <p className="tabular text-xs text-muted-foreground">{p.listing_type === "seller" ? "Seller listing" : "Dubai sourcing"} · {p.brand} · {formatEtb(p.price_etb_cents)} · {p.product_variants.length} options</p>
+              <p className="tabular text-xs text-muted-foreground">{p.listing_type === "seller" ? "Seller listing" : "Sourcing"} · {p.brand} · {formatEtb(p.price_etb_cents)} · {p.product_variants.length} options</p>
+              <p className="mt-1 text-xs text-muted-foreground">{p.market_city ? `${p.market_city}, ` : ""}{p.market_country} · {marketRegionLabel(p.market_region)}</p>
             </div>
             <label className="flex items-center gap-2 text-sm">{p.is_published ? "Live" : "Draft"}<Switch checked={p.is_published} onCheckedChange={(v) => togglePublish(p.id, v)} /></label>
           </div>

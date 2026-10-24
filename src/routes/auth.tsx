@@ -85,7 +85,7 @@ function AuthPage() {
         <img src={heroImage} alt="" className="absolute inset-0 size-full object-cover opacity-65" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/25" />
         <div className="relative"><Link to="/" className="font-display text-2xl">Shanta<span className="text-gold">.</span></Link><p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">Thoughtful finds, closer to home</p></div>
-        <div className="relative max-w-xl"><p className="font-display text-5xl leading-[1.05] xl:text-6xl">Shop local.<br /><span className="italic">Discover more.</span></p><p className="mt-5 max-w-md text-sm leading-6 text-white/75">From seller-set prices and preorder terms to products sourced from Dubai, keep every next step clear.</p><div className="mt-8 flex flex-wrap gap-2"><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur"><BadgeCheck className="size-3.5 text-gold" /> Verified sellers</span><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur"><PackageCheck className="size-3.5 text-gold" /> Clear order progress</span></div></div>
+        <div className="relative max-w-xl"><p className="font-display text-5xl leading-[1.05] xl:text-6xl">Shop local.<br /><span className="italic">Discover more.</span></p><p className="mt-5 max-w-md text-sm leading-6 text-white/75">From seller-set prices and preorder terms to finds sourced across global markets, keep every next step clear.</p><div className="mt-8 flex flex-wrap gap-2"><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur"><BadgeCheck className="size-3.5 text-gold" /> Verified sellers</span><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur"><PackageCheck className="size-3.5 text-gold" /> Clear order progress</span></div></div>
         <Link to="/shop" className="relative inline-flex items-center gap-2 text-xs font-medium text-white/75 transition hover:text-white">Explore the collection <ArrowRight className="size-3.5" /></Link>
       </aside>
 
@@ -124,7 +124,7 @@ function AuthPage() {
           <button className="underline-offset-4 hover:underline" onClick={() => setMode("in")}>Back to sign in</button>
         )}
       </div>
-      <p className="mt-8 border-t border-border pt-5 text-center text-xs leading-5 text-muted-foreground">Your account keeps seller preorders and Dubai sourcing requests in one place.</p>
+      <p className="mt-8 border-t border-border pt-5 text-center text-xs leading-5 text-muted-foreground">Your account keeps seller preorders and sourcing requests from every market in one place.</p>
       </div>
     </div>
   );

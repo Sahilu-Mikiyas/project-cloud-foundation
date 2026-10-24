@@ -40,7 +40,7 @@ function OrderDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, reference, order_type, seller_id, seller_response, seller_responded_at, status, subtotal_etb_cents, deposit_etb_cents, created_at, updated_at, order_items(*), order_events(id, status, note, created_at)")
+        .select("id, reference, order_type, seller_id, seller_response, seller_responded_at, status, subtotal_etb_cents, deposit_etb_cents, created_at, updated_at, market_region, market_country, market_city, order_items(*), order_events(id, status, note, created_at)")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -121,7 +121,7 @@ function OrderDetail() {
       <Link to="/account" className="text-sm text-muted-foreground transition-colors hover:text-foreground">← My orders</Link>
       <Reveal>
       <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-[2rem] bg-foreground p-6 text-background shadow-elevated sm:p-9">
-        <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold">{o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing reservation"}</p><h1 className="tabular mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">{o.reference}</h1><p className="mt-2 text-sm text-background/60">Placed {new Date(o.created_at).toLocaleDateString()}</p></div>
+        <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold">{o.order_type === "seller_listing" ? "Seller preorder" : "Shanta sourcing reservation"}</p><h1 className="tabular mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">{o.reference}</h1><p className="mt-2 text-sm text-background/60">Placed {new Date(o.created_at).toLocaleDateString()} · {o.market_city ? `${o.market_city}, ` : ""}{o.market_country}</p></div>
         <div className="rounded-full border border-white/15 bg-white/5 px-3 py-2"><StatusBadge status={o.status} /></div>
       </div>
       </Reveal>

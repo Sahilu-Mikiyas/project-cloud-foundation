@@ -30,7 +30,7 @@ function Account() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, reference, order_type, status, subtotal_etb_cents, deposit_etb_cents, created_at, order_items(product_name, variant_label, quantity)")
+        .select("id, reference, order_type, status, subtotal_etb_cents, deposit_etb_cents, created_at, market_region, market_country, market_city, order_items(product_name, variant_label, quantity)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -62,7 +62,7 @@ function Account() {
     <div className="workspace-page mx-auto max-w-6xl px-4 py-10 md:px-8 md:py-14">
       <Reveal>
         <div className="grid gap-6 rounded-[2rem] bg-foreground p-6 text-background shadow-elevated sm:p-9 md:grid-cols-[1.2fr_.8fr] md:items-end md:p-12">
-          <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">Your Shanta account</p><h1 className="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Orders, all in one place.</h1><p className="mt-3 max-w-xl text-sm leading-6 text-background/65">Follow seller preorders and Dubai sourcing requests from the moment you submit them.</p></div>
+          <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">Your Shanta account</p><h1 className="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Orders, all in one place.</h1><p className="mt-3 max-w-xl text-sm leading-6 text-background/65">Follow seller preorders and sourcing requests from the moment you submit them.</p></div>
           <div className="rounded-2xl border border-white/15 bg-white/5 p-5"><p className="text-xs text-background/55">Signed in as</p><p className="mt-1 break-all text-sm font-medium">{user?.email}</p><div className="mt-5 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-gold text-foreground"><PackageCheck className="size-5" /></span><div><p className="font-display text-2xl">{orders?.length ?? 0}</p><p className="text-xs text-background/55">orders and reservations</p></div></div></div>
         </div>
       </Reveal>
@@ -99,7 +99,7 @@ function Account() {
         {orders?.map((o) => (
           <Link key={o.id} to="/account/orders/$id" params={{ id: o.id }} className="group flex flex-col gap-3 p-5 transition-colors hover:bg-secondary/40 sm:p-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="tabular text-xs text-muted-foreground">{o.reference} · {o.order_type === "seller_listing" ? "Seller preorder" : "Dubai sourcing"} · {new Date(o.created_at).toLocaleDateString()}</p>
+              <p className="tabular text-xs text-muted-foreground">{o.reference} · {o.order_type === "seller_listing" ? "Seller preorder" : "Sourcing"} · {new Date(o.created_at).toLocaleDateString()} · {o.market_city ? `${o.market_city}, ` : ""}{o.market_country}</p>
               <p className="font-medium leading-6">{o.order_items.map((i) => `${i.product_name}${i.variant_label ? ` (${i.variant_label})` : ""} × ${i.quantity}`).join(", ")}</p>
             </div>
             <div className="flex items-center gap-4">

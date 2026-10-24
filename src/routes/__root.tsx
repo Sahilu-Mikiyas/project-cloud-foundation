@@ -81,8 +81,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Shanta — Your access to the Dubai market" },
-      { name: "description", content: "Curated cross-border shopping from Dubai to Ethiopia with verified sourcing partners." },
+      { title: "Shanta — Discover markets around the world" },
+      { name: "description", content: "Curated marketplace shopping with listings classified by region, country and city." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

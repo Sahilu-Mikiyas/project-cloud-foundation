@@ -15,12 +15,13 @@ import { formatEtb } from "@/lib/format";
 import { SellerListingMediaManager } from "@/components/SellerListingMediaManager";
 import { Reveal } from "@/components/Reveal";
 import { BadgeCheck, Store, Truck } from "lucide-react";
+import { MARKET_REGIONS, marketRegionLabel } from "@/lib/markets";
 
 export const Route = createFileRoute("/_authenticated/partner")({
   head: () => ({
     meta: [
       { title: "Seller & partner portal — Shanta" },
-      { name: "description", content: "Publish seller listings or apply as a Dubai sourcing partner." },
+      { name: "description", content: "Publish seller listings or apply as a sourcing partner for a market you serve." },
       { property: "og:title", content: "Seller & partner portal — Shanta" },
       { property: "og:description", content: "Manage seller listings or join Shanta as a sourcing partner." },
     ],
@@ -57,7 +58,7 @@ function Partner() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, reference, subtotal_etb_cents, created_at, order_items(product_name, variant_label, quantity)")
+        .select("id, reference, subtotal_etb_cents, created_at, market_region, market_country, market_city, order_items(product_name, variant_label, quantity)")
         .eq("status", "open_for_assignment")
         .order("created_at");
       if (error) throw error;
@@ -65,7 +66,7 @@ function Partner() {
     },
   });
 
-  const [supplierForm, setSupplierForm] = useState({ business_name: "", phone: "", base_city: "Dubai", notes: "" });
+  const [supplierForm, setSupplierForm] = useState({ business_name: "", phone: "", base_city: "Dubai", market_region: "middle_east", market_country: "United Arab Emirates", notes: "" });
   const [sellerForm, setSellerForm] = useState({ business_name: "", phone: "", description: "" });
   const [supplierView, setSupplierView] = useState<"overview" | "orders" | "profile">("overview");
   const [submitting, setSubmitting] = useState<"supplier" | "seller" | null>(null);
@@ -97,8 +98,8 @@ function Partner() {
       <Reveal>
       <div className="relative overflow-hidden rounded-[2rem] bg-foreground p-6 text-background shadow-elevated sm:p-9 md:p-12">
         <div className="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-gold/20 blur-3xl" aria-hidden />
-        <div className="relative max-w-3xl"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">Your Shanta workspace</p><h1 className="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Make your next move.</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-background/65">Build a local seller storefront, source Dubai orders for Shanta customers, or take part in both. Each channel keeps its own order flow and terms.</p>
-          <div className="mt-7 grid gap-3 sm:grid-cols-3"><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-gold text-foreground"><Store className="size-4" /></span><span className="text-xs font-medium">List local products</span></div><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-white/10"><BadgeCheck className="size-4" /></span><span className="text-xs font-medium">Set price and deposit</span></div><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-white/10"><Truck className="size-4" /></span><span className="text-xs font-medium">Source Dubai orders</span></div></div>
+        <div className="relative max-w-3xl"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">Your Shanta workspace</p><h1 className="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Make your next move.</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-background/65">Build a local seller storefront, source orders in the markets you serve, or take part in both. Each channel keeps its own order flow and terms.</p>
+          <div className="mt-7 grid gap-3 sm:grid-cols-3"><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-gold text-foreground"><Store className="size-4" /></span><span className="text-xs font-medium">List products by market</span></div><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-white/10"><BadgeCheck className="size-4" /></span><span className="text-xs font-medium">Set price and deposit</span></div><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-white/10"><Truck className="size-4" /></span><span className="text-xs font-medium">Source across regions</span></div></div>
         </div>
       </div>
       </Reveal>
@@ -139,12 +140,14 @@ function Partner() {
 
       <Reveal delay={140}>
       <section className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-card md:p-8">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">For sourcing partners</p><h2 className="mt-2 font-display text-3xl font-medium sm:text-4xl">Source Dubai orders</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Verified Dubai partners can take sourcing assignments and commit a separate fee for each order.</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">For sourcing partners</p><h2 className="mt-2 font-display text-3xl font-medium sm:text-4xl">Source orders by market</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Verified partners can take eligible sourcing assignments in the countries they serve and commit a separate fee for each order.</p>
         {!supplier ? (
           <form className="mt-6 grid max-w-2xl gap-4 md:grid-cols-2" onSubmit={applySupplier}>
             <Field id="supplier-business" label="Business or trading name" required value={supplierForm.business_name} onChange={(value) => setSupplierForm({ ...supplierForm, business_name: value })} />
             <Field id="supplier-phone" label="Phone (WhatsApp)" required value={supplierForm.phone} onChange={(value) => setSupplierForm({ ...supplierForm, phone: value })} />
+            <div className="space-y-1.5"><Label htmlFor="supplier-market-region">Market region</Label><Select value={supplierForm.market_region} onValueChange={(market_region) => setSupplierForm({ ...supplierForm, market_region })}><SelectTrigger id="supplier-market-region"><SelectValue /></SelectTrigger><SelectContent>{MARKET_REGIONS.map((market) => <SelectItem key={market.value} value={market.value}>{market.label}</SelectItem>)}</SelectContent></Select></div>
+            <Field id="supplier-market-country" label="Market country" required value={supplierForm.market_country} onChange={(market_country) => setSupplierForm({ ...supplierForm, market_country })} />
             <Field id="supplier-city" label="Base city" value={supplierForm.base_city} onChange={(value) => setSupplierForm({ ...supplierForm, base_city: value })} />
             <div className="space-y-1.5 md:col-span-2">
               <Label htmlFor="supplier-notes">Experience & travel schedule</Label>
@@ -159,7 +162,7 @@ function Partner() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">{supplier.business_name}</p>
-                <p className="text-sm text-muted-foreground">{supplier.base_city} · {supplier.phone}</p>
+                <p className="text-sm text-muted-foreground">{supplier.base_city}, {supplier.market_country} · {supplier.phone}</p>
               </div>
               <StatusBadge status={supplier.status} label={statusLabel[supplier.status]} />
             </div>
@@ -171,7 +174,7 @@ function Partner() {
         {isSupplier && supplier?.status === "verified" && (
           <div className="mt-6 overflow-hidden rounded-3xl border bg-background">
             <div className="grid gap-5 border-b p-5 md:grid-cols-[1fr_auto] md:items-end md:p-6">
-              <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Dubai sourcing</p><h3 className="mt-1 font-display text-2xl">Partner workspace</h3><p className="mt-1 text-sm text-muted-foreground">Review eligible sourcing requests and keep your partner details current.</p></div>
+              <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{marketRegionLabel(supplier.market_region)} · {supplier.market_country}</p><h3 className="mt-1 font-display text-2xl">Partner workspace</h3><p className="mt-1 text-sm text-muted-foreground">Review eligible sourcing requests and keep your partner details current.</p></div>
               <div className="rounded-2xl bg-secondary/60 px-4 py-3"><p className="text-xs text-muted-foreground">Open requests</p><p className="mt-1 font-display text-2xl tabular-nums">{openOrdersLoading ? "—" : openOrders.length}</p></div>
             </div>
             <div className="flex gap-2 overflow-x-auto border-b px-4" role="tablist" aria-label="Sourcing partner workspace">
@@ -188,18 +191,18 @@ function Partner() {
               ))}
             </div>
             <section id="supplier-panel-overview" role="tabpanel" hidden={supplierView !== "overview"} className="grid gap-4 p-5 md:grid-cols-2 md:p-6">
-              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your sourcing path</p><p className="mt-2 font-display text-xl">A request at a time.</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Review the order details and delivery expectations before taking part in an eligible Dubai sourcing request.</p></div>
-              <div className="rounded-2xl border p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current access</p><p className="mt-2 font-medium">{supplier.business_name}</p><p className="mt-1 text-sm text-muted-foreground">{supplier.base_city} · verified partner</p><Button className="mt-4" variant="outline" onClick={() => setSupplierView("orders")}>View open requests</Button></div>
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your sourcing path</p><p className="mt-2 font-display text-xl">A request at a time.</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Review the order details and delivery expectations before taking part in an eligible sourcing request in your market.</p></div>
+              <div className="rounded-2xl border p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current access</p><p className="mt-2 font-medium">{supplier.business_name}</p><p className="mt-1 text-sm text-muted-foreground">{supplier.base_city}, {supplier.market_country} · verified partner</p><Button className="mt-4" variant="outline" onClick={() => setSupplierView("orders")}>View open requests</Button></div>
               <p className="text-xs leading-5 text-muted-foreground md:col-span-2">Request claiming and assignment fee payments are not available in this workspace yet. Existing order and payment rules remain unchanged.</p>
             </section>
             <section id="supplier-panel-orders" role="tabpanel" hidden={supplierView !== "orders"} className="p-5 md:p-6">
-              <h4 className="font-display text-xl">Requests open for assignment</h4><p className="mt-1 text-sm text-muted-foreground">These are Dubai sourcing orders only. Seller preorders are handled in the seller workspace.</p>
+              <h4 className="font-display text-xl">Requests open for assignment</h4><p className="mt-1 text-sm text-muted-foreground">These requests match your registered market. Seller preorders are handled in the seller workspace.</p>
               <div className="mt-4 divide-y rounded-2xl border">
                 {openOrdersLoading && <p className="p-5 text-sm text-muted-foreground">Loading open sourcing requests…</p>}
                 {!openOrdersLoading && openOrders.length === 0 && <p className="p-5 text-sm text-muted-foreground">No open sourcing requests right now.</p>}
                 {openOrders.map((o) => (
                   <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                    <div><p className="tabular text-xs text-muted-foreground">{o.reference}</p><p className="font-medium">{o.order_items.map((i) => `${i.product_name} (${i.variant_label}) × ${i.quantity}`).join(", ")}</p></div>
+                    <div><p className="tabular text-xs text-muted-foreground">{o.reference} · {[o.market_city, o.market_country].filter(Boolean).join(", ")}</p><p className="font-medium">{o.order_items.map((i) => `${i.product_name} (${i.variant_label}) × ${i.quantity}`).join(", ")}</p></div>
                     <span className="tabular text-sm">{formatEtb(o.subtotal_etb_cents)}</span>
                   </div>
                 ))}
@@ -207,6 +210,7 @@ function Partner() {
             </section>
             <section id="supplier-panel-profile" role="tabpanel" hidden={supplierView !== "profile"} className="grid gap-4 p-5 sm:grid-cols-2 md:p-6">
               <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Business name</p><p className="mt-1 font-medium">{supplier.business_name}</p></div>
+              <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Market</p><p className="mt-1 font-medium">{marketRegionLabel(supplier.market_region)} · {supplier.market_country}</p></div>
               <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Base city</p><p className="mt-1 font-medium">{supplier.base_city}</p></div>
               <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Partner phone</p><p className="mt-1 font-medium">{supplier.phone}</p></div>
               <div className="rounded-2xl bg-secondary/50 p-4"><p className="text-xs text-muted-foreground">Application notes</p><p className="mt-1 font-medium">{supplier.notes || "No notes provided"}</p></div>
@@ -238,10 +242,13 @@ type ListingForm = {
   delivery_days: string;
   category_id: string;
   variants: string;
+  market_region: string;
+  market_country: string;
+  market_city: string;
 };
 
 const emptyListing: ListingForm = {
-  name: "", brand: "", description: "", price: "", deposit_percent: "30", delivery_days: "7", category_id: "", variants: "Standard",
+  name: "", brand: "", description: "", price: "", deposit_percent: "30", delivery_days: "7", category_id: "", variants: "Standard", market_region: "africa", market_country: "Ethiopia", market_city: "",
 };
 
 function SellerListings({ userId }: { userId: string }) {
@@ -265,7 +272,7 @@ function SellerListings({ userId }: { userId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, brand, description, delivery_days, price_etb_cents, deposit_percent, is_published, product_variants(id, label, inventory_limit, inventory_committed)")
+        .select("id, name, brand, description, delivery_days, price_etb_cents, deposit_percent, is_published, market_region, market_country, market_city, product_variants(id, label, inventory_limit, inventory_committed)")
         .eq("seller_user_id", userId)
         .eq("listing_type", "seller")
         .order("created_at", { ascending: false });
@@ -314,7 +321,7 @@ function SellerListings({ userId }: { userId: string }) {
     const slugBase = form.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const slug = `${slugBase || "product"}-${userId.slice(0, 6)}-${Date.now().toString(36)}`;
     setSaving(true);
-    const { error } = await supabase.rpc("create_seller_listing", {
+    const { error } = await supabase.rpc("create_seller_listing_with_market", {
       _name: form.name,
       _slug: slug,
       _brand: form.brand,
@@ -325,6 +332,9 @@ function SellerListings({ userId }: { userId: string }) {
       _delivery_days: deliveryDays,
       _category_id: form.category_id || null,
       _variant_labels: labels,
+      _market_region: form.market_region,
+      _market_country: form.market_country.trim(),
+      _market_city: form.market_city.trim() || null,
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
@@ -459,6 +469,9 @@ function SellerListings({ userId }: { userId: string }) {
         <Field id="listing-price" label="Price (ETB)" required value={form.price} onChange={(price) => setForm({ ...form, price })} />
         <Field id="listing-deposit" label="Deposit percentage (1–100)" value={form.deposit_percent} onChange={(deposit_percent) => setForm({ ...form, deposit_percent })} />
         <Field id="listing-delivery" label="Estimated delivery days" value={form.delivery_days} onChange={(delivery_days) => setForm({ ...form, delivery_days })} />
+        <div className="space-y-1.5"><Label htmlFor="listing-market-region">Market region</Label><Select value={form.market_region} onValueChange={(market_region) => setForm({ ...form, market_region })}><SelectTrigger id="listing-market-region"><SelectValue /></SelectTrigger><SelectContent>{MARKET_REGIONS.map((market) => <SelectItem key={market.value} value={market.value}>{market.label}</SelectItem>)}</SelectContent></Select></div>
+        <Field id="listing-market-country" label="Market country" required value={form.market_country} onChange={(market_country) => setForm({ ...form, market_country })} />
+        <Field id="listing-market-city" label="Market city (optional)" value={form.market_city} onChange={(market_city) => setForm({ ...form, market_city })} />
         <div className="space-y-1.5">
           <Label>Category</Label>
           <Select value={form.category_id} onValueChange={(category_id) => setForm({ ...form, category_id })}>
@@ -483,6 +496,7 @@ function SellerListings({ userId }: { userId: string }) {
             <div className="min-w-0 flex-1">
               <p className="font-medium">{listing.name}</p>
               <p className="tabular text-sm text-muted-foreground">{formatEtb(listing.price_etb_cents)} · {listing.deposit_percent}% deposit · {listing.product_variants.length} options</p>
+              <p className="mt-1 text-xs text-muted-foreground">{listing.market_city ? `${listing.market_city}, ` : ""}{listing.market_country} · {marketRegionLabel(listing.market_region)}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {listing.product_variants.map((variant) => (
                   <div key={variant.id} className="flex flex-wrap items-center gap-2 rounded-md bg-muted px-2 py-1.5 text-xs">

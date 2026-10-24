@@ -9,26 +9,28 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Reveal } from "@/components/Reveal";
+import { MARKET_REGIONS } from "@/lib/markets";
 
 export const Route = createFileRoute("/shop")({
   validateSearch: (search: Record<string, unknown>) => ({
     q: typeof search.q === "string" ? search.q : undefined,
     category: typeof search.category === "string" ? search.category : undefined,
     channel: search.channel === "seller" || search.channel === "sourcing" ? search.channel : undefined,
+    region: MARKET_REGIONS.some((market) => market.value === search.region) ? search.region as (typeof MARKET_REGIONS)[number]["value"] : undefined,
   }),
   head: () => ({
     meta: [
       { title: "Shop — Shanta" },
-      { name: "description", content: "Browse seller listings and Dubai sourcing products with transparent ETB prices." },
+      { name: "description", content: "Browse seller listings and sourcing products across markets worldwide, with transparent ETB prices." },
       { property: "og:title", content: "Shop — Shanta" },
-      { property: "og:description", content: "Shop seller listings or products sourced from Dubai through Shanta." },
+      { property: "og:description", content: "Shop seller listings and products from markets around the world through Shanta." },
     ],
   }),
   component: Shop,
 });
 
 function Shop() {
-  const { q, category, channel } = Route.useSearch();
+  const { q, category, channel, region } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [searchInput, setSearchInput] = useState(q ?? "");
   useEffect(() => setSearchInput(q ?? ""), [q]);
@@ -41,11 +43,12 @@ function Shop() {
     },
   });
   const { data: products, isLoading, isError, refetch } = useQuery({
-    queryKey: ["products", "list", category, channel, q],
+    queryKey: ["products", "list", category, channel, region, q],
     queryFn: async () => {
-      let query = supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type").eq("is_published", true);
+      let query = supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city").eq("is_published", true);
       if (category) query = query.eq("category_id", category);
       if (channel) query = query.eq("listing_type", channel);
+      if (region) query = query.eq("market_region", region);
       if (q?.trim()) query = query.ilike("name", `%${q.trim()}%`);
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
@@ -71,7 +74,7 @@ function Shop() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">The Shanta collection</p>
           <h1 className="mt-3 font-display text-4xl font-medium sm:text-5xl">Good things, <span className="italic">well found.</span></h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-background/70">Shop independently verified local sellers or explore finds sourced through our Dubai partners. Every listed price is in ETB.</p>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-background/70">Discover verified local sellers and sourcing partners across global markets. Dubai remains one market in our growing collection. Every listed price is in ETB.</p>
         </div>
         <form onSubmit={submitSearch} className="flex w-full gap-2 rounded-2xl border border-white/20 bg-white p-1.5 text-foreground shadow-elevated sm:max-w-sm" role="search">
           <label htmlFor="shop-search" className="sr-only">Search products by name</label>
@@ -90,9 +93,18 @@ function Shop() {
               {([
                 [undefined, "All products"],
                 ["seller", "Local sellers"],
-                ["sourcing", "Dubai sourcing"],
+                ["sourcing", "Sourcing markets"],
               ] as const).map(([value, label]) => (
                 <button key={label} className={cn("text-left lg:w-full", chip(channel === value))} aria-pressed={channel === value} onClick={() => navigate({ search: (previous) => ({ ...previous, channel: value }) })}>{label}</button>
+              ))}
+            </div>
+          </section>
+          <section>
+            <h2 className="mb-3 text-sm font-semibold">Market region</h2>
+            <div className="flex flex-wrap gap-2 lg:flex-col">
+              <button className={cn("text-left lg:w-full", chip(!region))} aria-pressed={!region} onClick={() => navigate({ search: (previous) => ({ ...previous, region: undefined }) })}>All regions</button>
+              {MARKET_REGIONS.map((market) => (
+                <button key={market.value} className={cn("text-left lg:w-full", chip(region === market.value))} aria-pressed={region === market.value} onClick={() => navigate({ search: (previous) => ({ ...previous, region: market.value }) })}>{market.label}</button>
               ))}
             </div>
           </section>
@@ -109,8 +121,8 @@ function Shop() {
 
         <section aria-labelledby="results-heading">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{category ? categories.find((item) => item.id === category)?.name : "Curated for everyday life"}</p><h2 id="results-heading" className="mt-1 font-display text-3xl font-medium">{channel === "seller" ? "Local seller finds" : channel === "sourcing" ? "Dubai sourcing" : "Explore the collection"}</h2><p className="mt-1 text-sm text-muted-foreground" aria-live="polite">{resultLabel}{q ? ` for “${q}”` : ""}</p></div>
-            {(channel || category || q) && <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setSearchInput(""); navigate({ search: { q: undefined, category: undefined, channel: undefined } }); }}>Clear filters</Button>}
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{category ? categories.find((item) => item.id === category)?.name : "Curated for everyday life"}</p><h2 id="results-heading" className="mt-1 font-display text-3xl font-medium">{channel === "seller" ? "Local seller finds" : channel === "sourcing" ? "Global sourcing" : "Explore the collection"}</h2><p className="mt-1 text-sm text-muted-foreground" aria-live="polite">{resultLabel}{region ? ` · ${MARKET_REGIONS.find((market) => market.value === region)?.label}` : ""}{q ? ` for “${q}”` : ""}</p></div>
+            {(channel || category || region || q) && <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setSearchInput(""); navigate({ search: { q: undefined, category: undefined, channel: undefined, region: undefined } }); }}>Clear filters</Button>}
           </div>
 
           {isLoading ? <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 xl:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="aspect-[4/5] w-full rounded-2xl" />)}</div> : isError ? (
@@ -118,7 +130,7 @@ function Shop() {
           ) : products?.length ? (
             <Reveal><div className="grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 xl:grid-cols-4">{products.map((product, i) => <ProductCard key={product.id} p={product} index={i} />)}</div></Reveal>
           ) : (
-            <div className="rounded-2xl border border-border bg-card px-6 py-14 text-center"><h3 className="font-display text-2xl">No products match this view yet.</h3><p className="mt-2 text-sm text-muted-foreground">Try another department or browse both Shanta channels.</p><Button asChild variant="outline" className="mt-5 rounded-full"><Link to="/shop" search={{ q: undefined, category: undefined, channel: undefined }}>Show all products</Link></Button></div>
+            <div className="rounded-2xl border border-border bg-card px-6 py-14 text-center"><h3 className="font-display text-2xl">No products match this view yet.</h3><p className="mt-2 text-sm text-muted-foreground">Try another department, market region, or Shanta channel.</p><Button asChild variant="outline" className="mt-5 rounded-full"><Link to="/shop" search={{ q: undefined, category: undefined, channel: undefined, region: undefined }}>Show all products</Link></Button></div>
           )}
         </section>
       </div>
