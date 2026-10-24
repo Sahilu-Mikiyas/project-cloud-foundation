@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Reveal } from "@/components/Reveal";
 import { MARKET_REGIONS } from "@/lib/markets";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/shop")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/shop")({
     category: typeof search.category === "string" ? search.category : undefined,
     channel: search.channel === "seller" || search.channel === "sourcing" ? search.channel : undefined,
     region: MARKET_REGIONS.some((market) => market.value === search.region) ? search.region as (typeof MARKET_REGIONS)[number]["value"] : undefined,
+    country: typeof search.country === "string" && search.country.trim().length <= 80 ? search.country.trim() || undefined : undefined,
   }),
   head: () => ({
     meta: [
@@ -30,7 +32,7 @@ export const Route = createFileRoute("/shop")({
 });
 
 function Shop() {
-  const { q, category, channel, region } = Route.useSearch();
+  const { q, category, channel, region, country } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [searchInput, setSearchInput] = useState(q ?? "");
   useEffect(() => setSearchInput(q ?? ""), [q]);
@@ -55,6 +57,8 @@ function Shop() {
       return data;
     },
   });
+  const countries = [...new Set((products ?? []).map((product) => product.market_country).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const visibleProducts = products?.filter((product) => !country || product.market_country === country);
 
   const chip = (active: boolean) => cn(
     "min-h-10 rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -64,7 +68,7 @@ function Shop() {
     event.preventDefault();
     navigate({ search: (previous) => ({ ...previous, q: searchInput.trim() || undefined }) });
   };
-  const resultLabel = isLoading ? "Loading products" : `${products?.length ?? 0} ${products?.length === 1 ? "product" : "products"}`;
+  const resultLabel = isLoading ? "Loading products" : `${visibleProducts?.length ?? 0} ${(visibleProducts?.length ?? 0) === 1 ? "product" : "products"}`;
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-20 pt-9 md:px-8 md:pt-14">
@@ -104,9 +108,21 @@ function Shop() {
             <div className="flex flex-wrap gap-2 lg:flex-col">
               <button className={cn("text-left lg:w-full", chip(!region))} aria-pressed={!region} onClick={() => navigate({ search: (previous) => ({ ...previous, region: undefined }) })}>All regions</button>
               {MARKET_REGIONS.map((market) => (
-                <button key={market.value} className={cn("text-left lg:w-full", chip(region === market.value))} aria-pressed={region === market.value} onClick={() => navigate({ search: (previous) => ({ ...previous, region: market.value }) })}>{market.label}</button>
+                <button key={market.value} className={cn("text-left lg:w-full", chip(region === market.value))} aria-pressed={region === market.value} onClick={() => navigate({ search: (previous) => ({ ...previous, region: market.value, country: undefined }) })}>{market.label}</button>
               ))}
             </div>
+          </section>
+          <section>
+            <h2 className="mb-3 text-sm font-semibold">Country</h2>
+            <Select value={country ?? "__all_countries__"} onValueChange={(value) => navigate({ search: (previous) => ({ ...previous, country: value === "__all_countries__" ? undefined : value }) })}>
+              <SelectTrigger aria-label="Filter products by country"><SelectValue placeholder="All countries" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all_countries__">All countries</SelectItem>
+                {countries.map((marketCountry) => <SelectItem key={marketCountry} value={marketCountry}>{marketCountry}</SelectItem>)}
+                {country && !countries.includes(country) && <SelectItem value={country}>{country}</SelectItem>}
+              </SelectContent>
+            </Select>
+            {!isLoading && countries.length === 0 && <p className="mt-2 text-xs text-muted-foreground">Country choices appear when listings are available.</p>}
           </section>
           <section>
             <h2 className="mb-3 text-sm font-semibold">Departments</h2>
@@ -121,16 +137,16 @@ function Shop() {
 
         <section aria-labelledby="results-heading">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{category ? categories.find((item) => item.id === category)?.name : "Curated for everyday life"}</p><h2 id="results-heading" className="mt-1 font-display text-3xl font-medium">{channel === "seller" ? "Local seller finds" : channel === "sourcing" ? "Global sourcing" : "Explore the collection"}</h2><p className="mt-1 text-sm text-muted-foreground" aria-live="polite">{resultLabel}{region ? ` · ${MARKET_REGIONS.find((market) => market.value === region)?.label}` : ""}{q ? ` for “${q}”` : ""}</p></div>
-            {(channel || category || region || q) && <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setSearchInput(""); navigate({ search: { q: undefined, category: undefined, channel: undefined, region: undefined } }); }}>Clear filters</Button>}
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{category ? categories.find((item) => item.id === category)?.name : "Curated for everyday life"}</p><h2 id="results-heading" className="mt-1 font-display text-3xl font-medium">{channel === "seller" ? "Local seller finds" : channel === "sourcing" ? "Global sourcing" : "Explore the collection"}</h2><p className="mt-1 text-sm text-muted-foreground" aria-live="polite">{resultLabel}{region ? ` · ${MARKET_REGIONS.find((market) => market.value === region)?.label}` : ""}{country ? ` · ${country}` : ""}{q ? ` for “${q}”` : ""}</p></div>
+            {(channel || category || region || country || q) && <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setSearchInput(""); navigate({ search: { q: undefined, category: undefined, channel: undefined, region: undefined, country: undefined } }); }}>Clear filters</Button>}
           </div>
 
           {isLoading ? <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 xl:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="aspect-[4/5] w-full rounded-2xl" />)}</div> : isError ? (
             <div className="rounded-2xl border border-border bg-card px-6 py-14 text-center"><h3 className="font-display text-2xl">We couldn’t load the collection.</h3><p className="mt-2 text-sm text-muted-foreground">Check your connection and try again.</p><Button variant="outline" className="mt-5 rounded-full" onClick={() => void refetch()}>Try again</Button></div>
-          ) : products?.length ? (
-            <Reveal><div className="grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 xl:grid-cols-4">{products.map((product, i) => <ProductCard key={product.id} p={product} index={i} />)}</div></Reveal>
+          ) : visibleProducts?.length ? (
+            <Reveal><div className="grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 xl:grid-cols-4">{visibleProducts.map((product, i) => <ProductCard key={product.id} p={product} index={i} />)}</div></Reveal>
           ) : (
-            <div className="rounded-2xl border border-border bg-card px-6 py-14 text-center"><h3 className="font-display text-2xl">No products match this view yet.</h3><p className="mt-2 text-sm text-muted-foreground">Try another department, market region, or Shanta channel.</p><Button asChild variant="outline" className="mt-5 rounded-full"><Link to="/shop" search={{ q: undefined, category: undefined, channel: undefined, region: undefined }}>Show all products</Link></Button></div>
+            <div className="rounded-2xl border border-border bg-card px-6 py-14 text-center"><h3 className="font-display text-2xl">No products match this view yet.</h3><p className="mt-2 text-sm text-muted-foreground">Try another department, market, or Shanta channel.</p><Button asChild variant="outline" className="mt-5 rounded-full"><Link to="/shop" search={{ q: undefined, category: undefined, channel: undefined, region: undefined, country: undefined }}>Show all products</Link></Button></div>
           )}
         </section>
       </div>
