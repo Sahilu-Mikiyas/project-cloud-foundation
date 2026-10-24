@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/Reveal";
 import { heroImage, productImage } from "@/lib/product-images";
 import type { ProductRow } from "@/components/ProductCard";
+import { MARKET_REGIONS } from "@/lib/markets";
 import watchImage from "@/assets/p-watch.jpg";
 import oudImage from "@/assets/p-oud.jpg";
 
@@ -44,6 +45,33 @@ function Home() {
       const { data, error } = await supabase.from("categories").select("id, slug, name").order("sort_order").limit(8);
       if (error) throw error;
       return data;
+    },
+  });
+  const { data: marketCoverage = [], isLoading: isMarketCoverageLoading, isError: isMarketCoverageError } = useQuery({
+    queryKey: ["market-coverage"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("products")
+        .select("market_region, market_country")
+        .eq("is_published", true)
+        .eq("listing_type", "seller")
+        .order("market_country")
+        .limit(1000);
+      if (error) throw error;
+      const counts = await Promise.all(MARKET_REGIONS.map(async (region) => {
+        const { count, error: countError } = await supabase.from("products")
+          .select("id", { count: "exact", head: true })
+          .eq("is_published", true)
+          .eq("listing_type", "seller")
+          .eq("market_region", region.value);
+        if (countError) throw countError;
+        return count ?? 0;
+      }));
+      return MARKET_REGIONS.map((region) => {
+        const countries = [...new Set((data ?? [])
+          .filter((product) => product.market_region === region.value)
+          .map((product) => product.market_country))];
+        return { ...region, countries, listingCount: counts[MARKET_REGIONS.indexOf(region)] };
+      });
     },
   });
 
@@ -119,6 +147,25 @@ function Home() {
               <span className="font-display text-3xl text-gold/80">0{i + 1}</span><span className="flex items-center justify-between gap-2 text-sm font-medium">{category.name}<ArrowUpRight className="size-4 text-muted-foreground transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-foreground" aria-hidden /></span>
             </Link>)}
             {!categories.length && <Link to="/shop" className="editorial-card flex min-h-28 items-end justify-between rounded-2xl border border-border bg-card p-5 text-sm font-medium">Explore all products <ArrowUpRight className="size-4" aria-hidden /></Link>}
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="mx-auto mt-24 max-w-7xl px-5 sm:px-8 lg:px-10" aria-labelledby="markets-heading">
+          <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">A world of makers</p><h2 id="markets-heading" className="mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">Shop by seller market.</h2><p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Explore verified seller listings by region. Market availability updates from published listings, so every count reflects the current catalog.</p></div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(isMarketCoverageLoading || isMarketCoverageError ? MARKET_REGIONS.map((region) => ({ ...region, countries: [] as string[], listingCount: null as number | null })) : marketCoverage).map((market, index) => (
+              <article key={market.value} className="editorial-card flex min-h-48 flex-col justify-between rounded-2xl border border-border bg-card p-5 sm:p-6">
+                <div><span className="font-display text-3xl text-gold/80">0{index + 1}</span><h3 className="mt-3 font-display text-2xl">{market.label}</h3><p className="mt-2 min-h-10 text-sm leading-5 text-muted-foreground">{market.countries.length ? market.countries.join(" · ") : "New verified seller markets can appear here."}</p></div>
+                <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
+                  <span className="text-xs text-muted-foreground">{market.listingCount === null ? isMarketCoverageError ? "Listings unavailable" : "Loading listings…" : `${market.listingCount} ${market.listingCount === 1 ? "listing" : "listings"}`}</span>
+                  <Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller", region: market.value }} className="inline-flex items-center gap-1 text-xs font-medium transition-colors hover:text-gold">Explore <ArrowUpRight className="size-3.5" aria-hidden /></Link>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       </Reveal>
