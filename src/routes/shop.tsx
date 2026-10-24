@@ -19,6 +19,7 @@ export const Route = createFileRoute("/shop")({
     channel: search.channel === "seller" || search.channel === "sourcing" ? search.channel : undefined,
     region: MARKET_REGIONS.some((market) => market.value === search.region) ? search.region as (typeof MARKET_REGIONS)[number]["value"] : undefined,
     country: typeof search.country === "string" && search.country.trim().length <= 80 ? search.country.trim() || undefined : undefined,
+    city: typeof search.country === "string" && typeof search.city === "string" && search.city.trim().length <= 80 ? search.city.trim() || undefined : undefined,
   }),
   head: () => ({
     meta: [
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/shop")({
 });
 
 function Shop() {
-  const { q, category, channel, region, country } = Route.useSearch();
+  const { q, category, channel, region, country, city } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [searchInput, setSearchInput] = useState(q ?? "");
   useEffect(() => setSearchInput(q ?? ""), [q]);
@@ -58,7 +59,12 @@ function Shop() {
     },
   });
   const countries = [...new Set((products ?? []).map((product) => product.market_country).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-  const visibleProducts = products?.filter((product) => !country || product.market_country === country);
+  const cities = country
+    ? [...new Set((products ?? []).filter((product) => product.market_country === country).map((product) => product.market_city).filter((marketCity): marketCity is string => Boolean(marketCity)))].sort((a, b) => a.localeCompare(b))
+    : [];
+  const visibleProducts = products?.filter((product) =>
+    (!country || product.market_country === country) && (!city || product.market_city === city),
+  );
 
   const chip = (active: boolean) => cn(
     "min-h-10 rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -108,13 +114,13 @@ function Shop() {
             <div className="flex flex-wrap gap-2 lg:flex-col">
               <button className={cn("text-left lg:w-full", chip(!region))} aria-pressed={!region} onClick={() => navigate({ search: (previous) => ({ ...previous, region: undefined }) })}>All regions</button>
               {MARKET_REGIONS.map((market) => (
-                <button key={market.value} className={cn("text-left lg:w-full", chip(region === market.value))} aria-pressed={region === market.value} onClick={() => navigate({ search: (previous) => ({ ...previous, region: market.value, country: undefined }) })}>{market.label}</button>
+                <button key={market.value} className={cn("text-left lg:w-full", chip(region === market.value))} aria-pressed={region === market.value} onClick={() => navigate({ search: (previous) => ({ ...previous, region: market.value, country: undefined, city: undefined }) })}>{market.label}</button>
               ))}
             </div>
           </section>
           <section>
             <h2 className="mb-3 text-sm font-semibold">Country</h2>
-            <Select value={country ?? "__all_countries__"} onValueChange={(value) => navigate({ search: (previous) => ({ ...previous, country: value === "__all_countries__" ? undefined : value }) })}>
+            <Select value={country ?? "__all_countries__"} onValueChange={(value) => navigate({ search: (previous) => ({ ...previous, country: value === "__all_countries__" ? undefined : value, city: undefined }) })}>
               <SelectTrigger aria-label="Filter products by country"><SelectValue placeholder="All countries" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all_countries__">All countries</SelectItem>
@@ -124,6 +130,18 @@ function Shop() {
             </Select>
             {!isLoading && countries.length === 0 && <p className="mt-2 text-xs text-muted-foreground">Country choices appear when listings are available.</p>}
           </section>
+          {country && <section>
+            <h2 className="mb-3 text-sm font-semibold">City</h2>
+            <Select value={city ?? "__all_cities__"} onValueChange={(value) => navigate({ search: (previous) => ({ ...previous, city: value === "__all_cities__" ? undefined : value }) })}>
+              <SelectTrigger aria-label="Filter products by city"><SelectValue placeholder="All cities" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all_cities__">All cities</SelectItem>
+                {cities.map((marketCity) => <SelectItem key={marketCity} value={marketCity}>{marketCity}</SelectItem>)}
+                {city && !cities.includes(city) && <SelectItem value={city}>{city}</SelectItem>}
+              </SelectContent>
+            </Select>
+            {!isLoading && cities.length === 0 && <p className="mt-2 text-xs text-muted-foreground">No cities are listed for this country yet.</p>}
+          </section>}
           <section>
             <h2 className="mb-3 text-sm font-semibold">Departments</h2>
             <div className="flex flex-wrap gap-2 lg:flex-col">
@@ -137,8 +155,8 @@ function Shop() {
 
         <section aria-labelledby="results-heading">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{category ? categories.find((item) => item.id === category)?.name : "Curated for everyday life"}</p><h2 id="results-heading" className="mt-1 font-display text-3xl font-medium">{channel === "seller" ? "Local seller finds" : channel === "sourcing" ? "Global sourcing" : "Explore the collection"}</h2><p className="mt-1 text-sm text-muted-foreground" aria-live="polite">{resultLabel}{region ? ` · ${MARKET_REGIONS.find((market) => market.value === region)?.label}` : ""}{country ? ` · ${country}` : ""}{q ? ` for “${q}”` : ""}</p></div>
-            {(channel || category || region || country || q) && <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setSearchInput(""); navigate({ search: { q: undefined, category: undefined, channel: undefined, region: undefined, country: undefined } }); }}>Clear filters</Button>}
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{category ? categories.find((item) => item.id === category)?.name : "Curated for everyday life"}</p><h2 id="results-heading" className="mt-1 font-display text-3xl font-medium">{channel === "seller" ? "Local seller finds" : channel === "sourcing" ? "Global sourcing" : "Explore the collection"}</h2><p className="mt-1 text-sm text-muted-foreground" aria-live="polite">{resultLabel}{region ? ` · ${MARKET_REGIONS.find((market) => market.value === region)?.label}` : ""}{country ? ` · ${country}` : ""}{city ? ` · ${city}` : ""}{q ? ` for “${q}”` : ""}</p></div>
+            {(channel || category || region || country || city || q) && <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setSearchInput(""); navigate({ search: { q: undefined, category: undefined, channel: undefined, region: undefined, country: undefined, city: undefined } }); }}>Clear filters</Button>}
           </div>
 
           {isLoading ? <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 xl:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="aspect-[4/5] w-full rounded-2xl" />)}</div> : isError ? (
@@ -146,7 +164,7 @@ function Shop() {
           ) : visibleProducts?.length ? (
             <Reveal><div className="grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 xl:grid-cols-4">{visibleProducts.map((product, i) => <ProductCard key={product.id} p={product} index={i} />)}</div></Reveal>
           ) : (
-            <div className="rounded-2xl border border-border bg-card px-6 py-14 text-center"><h3 className="font-display text-2xl">No products match this view yet.</h3><p className="mt-2 text-sm text-muted-foreground">Try another department, market, or Shanta channel.</p><Button asChild variant="outline" className="mt-5 rounded-full"><Link to="/shop" search={{ q: undefined, category: undefined, channel: undefined, region: undefined, country: undefined }}>Show all products</Link></Button></div>
+            <div className="rounded-2xl border border-border bg-card px-6 py-14 text-center"><h3 className="font-display text-2xl">No products match this view yet.</h3><p className="mt-2 text-sm text-muted-foreground">Try another department, market, or Shanta channel.</p><Button asChild variant="outline" className="mt-5 rounded-full"><Link to="/shop" search={{ q: undefined, category: undefined, channel: undefined, region: undefined, country: undefined, city: undefined }}>Show all products</Link></Button></div>
           )}
         </section>
       </div>
