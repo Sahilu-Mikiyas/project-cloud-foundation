@@ -92,6 +92,13 @@
       "when": 1793116800000,
       "tag": "0012_catalog_preview_population",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793130000000,
+      "tag": "0013_category_facets_and_catalog_depth",
+      "breakpoints": true
     }
   ]
 }
