@@ -85,6 +85,13 @@
       "when": 1792768051000,
       "tag": "0011_global_market_classification",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793116800000,
+      "tag": "0012_catalog_preview_population",
+      "breakpoints": true
     }
   ]
 }

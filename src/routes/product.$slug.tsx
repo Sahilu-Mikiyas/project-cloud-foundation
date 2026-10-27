@@ -110,6 +110,7 @@ function ProductPage() {
         </div>
         <h1 className="mt-4 text-balance font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">{p.name}</h1>
         <p className="tabular mt-4 text-3xl font-semibold tracking-tight">{formatEtb(unit)}</p>
+        {p.is_catalog_sample && <p className="mt-2 text-sm font-medium text-gold-foreground">Illustrative sample price · not a live offer</p>}
         <p className="mt-5 leading-7 text-muted-foreground">{p.description}</p>
         <div className="mt-5 rounded-2xl border border-border bg-card p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">Market</p>
@@ -117,7 +118,7 @@ function ProductPage() {
           <p className="mt-1 text-xs text-muted-foreground">{marketRegionLabel(p.market_region)}</p>
         </div>
 
-        {variants.length > 0 && (
+        {!p.is_catalog_sample && variants.length > 0 && (
           <div className="mt-8 border-t border-border pt-6">
             <p className="mb-3 text-sm font-medium">Option</p>
             <div className="flex flex-wrap gap-2">
@@ -138,22 +139,25 @@ function ProductPage() {
           </div>
         )}
 
-        {p.listing_type === "seller" && remaining !== null && (
+        {!p.is_catalog_sample && p.listing_type === "seller" && remaining !== null && (
           <p className="mt-2 text-sm text-muted-foreground">
             {remaining === 0 ? "This option has reached its preorder limit." : `${remaining} available for preorder`}
           </p>
         )}
 
-        <div className="mt-6">
+        {!p.is_catalog_sample && <div className="mt-6">
           <p className="mb-3 text-sm font-medium">Quantity</p>
           <div className="inline-flex items-center rounded-md border">
             <button className="p-3" aria-label="Decrease" onClick={() => { resetRequestKey(); setQty((q) => Math.max(1, q - 1)); }}><Minus className="h-4 w-4" /></button>
             <span className="tabular w-10 text-center">{qty}</span>
             <button className="p-3" aria-label="Increase" disabled={qty >= maxQuantity} onClick={() => { resetRequestKey(); setQty((q) => Math.min(maxQuantity, q + 1)); }}><Plus className="h-4 w-4" /></button>
           </div>
-        </div>
+        </div>}
 
-        <div className="mt-8 space-y-3 rounded-3xl border border-border bg-card p-5 text-sm shadow-card sm:p-6">
+        {p.is_catalog_sample ? <div className="mt-8 rounded-3xl border border-border bg-secondary/50 p-5 text-sm leading-6 text-muted-foreground">
+          <p className="font-semibold text-foreground">Catalog preview</p>
+          <p className="mt-1">This sample helps show how Shanta listings are organized by category and market. It is not currently available to order. Price and delivery details are illustrative.</p>
+        </div> : <div className="mt-8 space-y-3 rounded-3xl border border-border bg-card p-5 text-sm shadow-card sm:p-6">
           <div className="mb-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your order estimate</p><p className="mt-1 text-xs text-muted-foreground">{qty} {qty === 1 ? "item" : "items"} · ETB</p></div>
           <Row label="Order total" value={formatEtb(subtotal)} />
           <div className="my-2 border-t border-dashed border-border" />
@@ -163,16 +167,16 @@ function ProductPage() {
             <p className="font-medium">Estimated delivery</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">About {p.delivery_days} days after a partner is assigned. Your order summary will include the final terms.</p>
           </div>
-        </div>
+        </div>}
 
-        <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId || (p.listing_type === "seller" && remaining === 0)} onClick={reserve}>
+        {!p.is_catalog_sample && <Button size="lg" className="mt-6 h-12 w-full" disabled={busy || !variantId || (p.listing_type === "seller" && remaining === 0)} onClick={reserve}>
           {busy ? "Creating order…" : p.listing_type === "seller" ? user ? "Create preorder (deposit due)" : "Sign in to preorder" : user ? "Reserve order" : "Sign in to reserve"}
-        </Button>
-        <p className="mt-3 text-center text-xs leading-5 text-muted-foreground">
+        </Button>}
+        {!p.is_catalog_sample && <p className="mt-3 text-center text-xs leading-5 text-muted-foreground">
           {p.listing_type === "seller"
             ? "Creating this preorder records the seller’s listed price and deposit terms. It does not collect payment."
             : "This reservation records your request. Online deposit payment is not available yet."}
-        </p>
+        </p>}
       </div>
       </div>
       </Reveal>
