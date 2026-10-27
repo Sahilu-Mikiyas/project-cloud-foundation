@@ -33,8 +33,8 @@ function Home() {
     queryKey: ["products", "featured"],
     queryFn: async () => {
       const { data, error } = await supabase.from("products")
-        .select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city, is_catalog_sample")
-        .eq("is_published", true).order("created_at", { ascending: false }).limit(16);
+        .select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city, is_catalog_sample, category_id")
+        .eq("is_published", true).order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
       return data;
     },
@@ -81,6 +81,13 @@ function Home() {
   };
   const sellerFeature = products.find((product) => product.listing_type === "seller");
   const sourcingFeature = products.find((product) => product.listing_type === "sourcing");
+  const categoryCollections = categories.map((category) => ({
+    ...category,
+    products: products.filter((product) => product.category_id === category.id),
+  })).filter((category) => category.products.length > 0);
+  const featuredProducts = categoryCollections.length
+    ? categoryCollections.flatMap((category) => category.products.slice(0, 1)).slice(0, 8)
+    : products.slice(0, 8);
 
   return (
     <>
@@ -133,7 +140,7 @@ function Home() {
           </div>
           {isLoading ? <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="aspect-[4/3] w-full rounded-2xl" />)}</div> : isError ? (
             <div className="rounded-3xl border border-border bg-card p-8 text-center"><p className="font-display text-2xl">The collection is taking a moment.</p><p className="mt-1 text-sm text-muted-foreground">You can still browse the full shop.</p><Button asChild variant="outline" className="mt-4 rounded-full"><Link to="/shop">Browse products</Link></Button></div>
-          ) : products.length ? <div className="reveal-stagger grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-6">{products.map((product, i) => <ProductCard key={product.id} p={product} index={i} />)}</div> : (
+          ) : products.length ? <div className="reveal-stagger grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-6">{featuredProducts.map((product, i) => <ProductCard key={product.id} p={product} index={i} />)}</div> : (
             <div className="rounded-3xl border border-border bg-card p-8 text-center"><p className="font-display text-2xl">New finds are on the way.</p><p className="mt-1 text-sm text-muted-foreground">Browse the shop to explore the catalog.</p><Button asChild variant="outline" className="mt-4 rounded-full"><Link to="/shop">Browse products</Link></Button></div>
           )}
         </section>
@@ -144,10 +151,24 @@ function Home() {
           <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Explore the catalog</p><h2 className="mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">A little of everything.</h2></div><p className="max-w-sm text-sm leading-6 text-muted-foreground">Choose a department, then keep your preferred shopping channel in view.</p></div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {categories.map((category, i) => <Link key={category.id} to="/shop" search={{ q: undefined, category: category.id, channel: undefined, region: undefined }} className="editorial-card group flex min-h-28 flex-col justify-between rounded-2xl border border-border bg-card p-4 sm:min-h-36 sm:p-5">
-              <span className="font-display text-3xl text-gold/80">0{i + 1}</span><span className="flex items-center justify-between gap-2 text-sm font-medium">{category.name}<ArrowUpRight className="size-4 text-muted-foreground transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-foreground" aria-hidden /></span>
+              <span className="font-display text-3xl text-gold/80">{String(i + 1).padStart(2, "0")}</span><span className="flex items-center justify-between gap-2 text-sm font-medium">{category.name}<ArrowUpRight className="size-4 text-muted-foreground transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-foreground" aria-hidden /></span>
             </Link>)}
             {!categories.length && <Link to="/shop" className="editorial-card flex min-h-28 items-end justify-between rounded-2xl border border-border bg-card p-5 text-sm font-medium">Explore all products <ArrowUpRight className="size-4" aria-hidden /></Link>}
           </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="mx-auto mt-20 max-w-7xl space-y-16 px-5 sm:px-8 lg:px-10" aria-label="Shop products by department">
+          {categoryCollections.map((category) => <section key={category.id} aria-labelledby={`department-${category.slug}`}>
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Shop this department</p><h2 id={`department-${category.slug}`} className="mt-1 font-display text-3xl font-medium sm:text-4xl">{category.name}</h2><p className="mt-1 text-sm text-muted-foreground">{category.products.length} curated {category.products.length === 1 ? "find" : "finds"} from global markets</p></div>
+              <Link to="/shop" search={{ q: undefined, category: category.id, channel: undefined, region: undefined }} className="inline-flex shrink-0 items-center gap-1 text-sm font-medium hover:text-gold">Shop all <ArrowRight className="size-4" aria-hidden /></Link>
+            </div>
+            <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4">
+              {category.products.map((product, index) => <div key={product.id} className="w-[72%] shrink-0 snap-start sm:w-[42%] lg:w-[24%]"><ProductCard p={product} index={index} /></div>)}
+            </div>
+          </section>)}
         </section>
       </Reveal>
 

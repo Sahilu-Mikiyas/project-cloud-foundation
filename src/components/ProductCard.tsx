@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { formatEtb } from "@/lib/format";
 import { marketLocation, marketRegionLabel } from "@/lib/markets";
 import { productImage } from "@/lib/product-images";
+import type { Json } from "@/integrations/supabase/types";
 
 export type ProductRow = {
   id: string;
@@ -17,6 +18,8 @@ export type ProductRow = {
   market_country?: string;
   market_city?: string | null;
   is_catalog_sample?: boolean;
+  category_id?: string | null;
+  catalog_attributes?: Json;
 };
 
 export function ProductCard({ p, index = 0 }: { p: ProductRow; index?: number }) {
