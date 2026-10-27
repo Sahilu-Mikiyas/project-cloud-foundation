@@ -16,6 +16,19 @@ import { SellerListingMediaManager } from "@/components/SellerListingMediaManage
 import { Reveal } from "@/components/Reveal";
 import { BadgeCheck, Store, Truck } from "lucide-react";
 import { MARKET_REGIONS, marketRegionLabel } from "@/lib/markets";
+import type { Json } from "@/integrations/supabase/types";
+
+type CategoryFacet = { key: string; label: string; options: string[] };
+
+function readCategoryFacets(value: Json): CategoryFacet[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const facet = item as { key?: Json; label?: Json; options?: Json };
+    if (typeof facet.key !== "string" || typeof facet.label !== "string" || !Array.isArray(facet.options)) return [];
+    return [{ key: facet.key, label: facet.label, options: facet.options.filter((option): option is string => typeof option === "string") }];
+  });
+}
 
 export const Route = createFileRoute("/_authenticated/partner")({
   head: () => ({
@@ -241,6 +254,7 @@ type ListingForm = {
   deposit_percent: string;
   delivery_days: string;
   category_id: string;
+  catalog_attributes: Record<string, string>;
   variants: string;
   market_region: string;
   market_country: string;
@@ -248,7 +262,7 @@ type ListingForm = {
 };
 
 const emptyListing: ListingForm = {
-  name: "", brand: "", description: "", price: "", deposit_percent: "30", delivery_days: "7", category_id: "", variants: "Standard", market_region: "africa", market_country: "Ethiopia", market_city: "",
+  name: "", brand: "", description: "", price: "", deposit_percent: "30", delivery_days: "7", category_id: "", catalog_attributes: {}, variants: "Standard", market_region: "africa", market_country: "Ethiopia", market_city: "",
 };
 
 function SellerListings({ userId }: { userId: string }) {
@@ -264,11 +278,13 @@ function SellerListings({ userId }: { userId: string }) {
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("id, name").order("sort_order");
+      const { data, error } = await supabase.from("categories").select("id, name, filter_definitions").order("sort_order");
       if (error) throw error;
       return data ?? [];
     },
   });
+  const selectedCategory = categories.find((category) => category.id === form.category_id);
+  const categoryFacets = selectedCategory ? readCategoryFacets(selectedCategory.filter_definitions) : [];
   const { data: listings = [] } = useQuery({
     queryKey: ["seller-listings", userId],
     queryFn: async () => {
@@ -315,6 +331,14 @@ function SellerListings({ userId }: { userId: string }) {
     const depositPercent = Number(form.deposit_percent);
     const deliveryDays = Number(form.delivery_days);
     const labels = form.variants.split(",").map((label) => label.trim()).filter(Boolean);
+    if (!form.category_id) {
+      toast.error("Choose a category for this listing");
+      return;
+    }
+    if (categoryFacets.some((facet) => !form.catalog_attributes[facet.key])) {
+      toast.error("Choose the category details before saving this listing");
+      return;
+    }
     if (!Number.isSafeInteger(priceCents) || priceCents <= 0) { toast.error("Enter a valid price greater than zero"); return; }
     if (!Number.isInteger(depositPercent) || depositPercent < 1 || depositPercent > 100) { toast.error("Deposit must be between 1 and 100 percent"); return; }
     if (!Number.isInteger(deliveryDays) || deliveryDays < 1 || deliveryDays > 365) { toast.error("Delivery estimate must be between 1 and 365 days"); return; }
@@ -337,6 +361,7 @@ function SellerListings({ userId }: { userId: string }) {
       _market_region: form.market_region,
       _market_country: form.market_country.trim(),
       _market_city: form.market_city.trim() || null,
+      _catalog_attributes: Object.fromEntries(categoryFacets.map((facet) => [facet.key, form.catalog_attributes[facet.key]])),
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
@@ -494,11 +519,18 @@ function SellerListings({ userId }: { userId: string }) {
         <Field id="listing-market-city" label="Market city (optional)" value={form.market_city} onChange={(market_city) => setForm({ ...form, market_city })} />
         <div className="space-y-1.5">
           <Label>Category</Label>
-          <Select value={form.category_id} onValueChange={(category_id) => setForm({ ...form, category_id })}>
+          <Select value={form.category_id} onValueChange={(category_id) => setForm({ ...form, category_id, catalog_attributes: {} })}>
             <SelectTrigger><SelectValue placeholder="Choose a category" /></SelectTrigger>
             <SelectContent>{categories.map((category) => <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
+        {categoryFacets.map((facet) => <div key={facet.key} className="space-y-1.5">
+          <Label htmlFor={`listing-facet-${facet.key}`}>{facet.label}</Label>
+          <Select value={form.catalog_attributes[facet.key] ?? "__choose__"} onValueChange={(value) => setForm({ ...form, catalog_attributes: { ...form.catalog_attributes, [facet.key]: value === "__choose__" ? "" : value } })}>
+            <SelectTrigger id={`listing-facet-${facet.key}`}><SelectValue placeholder={`Choose ${facet.label.toLowerCase()}`} /></SelectTrigger>
+            <SelectContent><SelectItem value="__choose__">Choose {facet.label.toLowerCase()}</SelectItem>{facet.options.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>)}
         <Field id="listing-variants" label="Options (comma separated)" value={form.variants} onChange={(variants) => setForm({ ...form, variants })} />
         <div className="space-y-1.5 md:col-span-2">
           <Label htmlFor="listing-description">Description</Label>

@@ -16,18 +16,21 @@ export type Database = {
     Tables: {
       categories: {
         Row: {
+          filter_definitions: Json
           id: string
           name: string
           slug: string
           sort_order: number
         }
         Insert: {
+          filter_definitions?: Json
           id?: string
           name: string
           slug: string
           sort_order?: number
         }
         Update: {
+          filter_definitions?: Json
           id?: string
           name?: string
           slug?: string
@@ -430,6 +433,7 @@ export type Database = {
         Row: {
           brand: string | null
           category_id: string | null
+          catalog_attributes: Json
           created_at: string
           delivery_days: number
           deposit_percent: number
@@ -451,6 +455,7 @@ export type Database = {
         Insert: {
           brand?: string | null
           category_id?: string | null
+          catalog_attributes?: Json
           created_at?: string
           delivery_days?: number
           deposit_percent?: number
@@ -472,6 +477,7 @@ export type Database = {
         Update: {
           brand?: string | null
           category_id?: string | null
+          catalog_attributes?: Json
           created_at?: string
           delivery_days?: number
           deposit_percent?: number
@@ -703,6 +709,7 @@ export type Database = {
       create_seller_listing_with_market: {
         Args: {
           _brand: string
+          _catalog_attributes: Json
           _category_id: string | null
           _delivery_days: number
           _deposit_percent: number

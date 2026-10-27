@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,24 @@ import { cn } from "@/lib/utils";
 import { Reveal } from "@/components/Reveal";
 import { MARKET_REGIONS } from "@/lib/markets";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Json } from "@/integrations/supabase/types";
+
+type CategoryFacet = { key: string; label: string; options: string[] };
+
+function readFacets(value: Json): CategoryFacet[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const facet = item as { key?: Json; label?: Json; options?: Json };
+    if (typeof facet.key !== "string" || typeof facet.label !== "string" || !Array.isArray(facet.options)) return [];
+    return [{ key: facet.key, label: facet.label, options: facet.options.filter((option): option is string => typeof option === "string") }];
+  });
+}
+
+function readAttributes(value: Json | undefined): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter(([, item]) => typeof item === "string")) as Record<string, string>;
+}
 
 export const Route = createFileRoute("/shop")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -36,11 +54,16 @@ function Shop() {
   const { q, category, channel, region, country, city } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [searchInput, setSearchInput] = useState(q ?? "");
+  const [facetValues, setFacetValues] = useState<Record<string, string>>({});
+  const [priceBand, setPriceBand] = useState("any");
+  const [sortBy, setSortBy] = useState("featured");
+  const [selectedBrand, setSelectedBrand] = useState("all");
   useEffect(() => setSearchInput(q ?? ""), [q]);
+  useEffect(() => { setFacetValues({}); setPriceBand("any"); setSortBy("featured"); setSelectedBrand("all"); }, [category]);
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("id, slug, name").order("sort_order");
+      const { data, error } = await supabase.from("categories").select("id, slug, name, filter_definitions").order("sort_order");
       if (error) throw error;
       return data;
     },
@@ -48,7 +71,7 @@ function Shop() {
   const { data: products, isLoading, isError, refetch } = useQuery({
     queryKey: ["products", "list", category, channel, region, q],
     queryFn: async () => {
-      let query = supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city, is_catalog_sample").eq("is_published", true);
+      let query = supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city, is_catalog_sample, category_id, catalog_attributes").eq("is_published", true);
       if (category) query = query.eq("category_id", category);
       if (channel) query = query.eq("listing_type", channel);
       if (region) query = query.eq("market_region", region);
@@ -62,9 +85,19 @@ function Shop() {
   const cities = country
     ? [...new Set((products ?? []).filter((product) => product.market_country === country).map((product) => product.market_city).filter((marketCity): marketCity is string => Boolean(marketCity)))].sort((a, b) => a.localeCompare(b))
     : [];
-  const visibleProducts = products?.filter((product) =>
-    (!country || product.market_country === country) && (!city || product.market_city === city),
-  );
+  const activeCategory = categories.find((item) => item.id === category);
+  const facets = activeCategory ? readFacets(activeCategory.filter_definitions) : [];
+  const brands = [...new Set((products ?? []).map((product) => product.brand).filter((brand): brand is string => Boolean(brand)))].sort((a, b) => a.localeCompare(b));
+  const visibleProducts = useMemo(() => (products ?? []).filter((product) => {
+    if (country && product.market_country !== country) return false;
+    if (city && product.market_city !== city) return false;
+    if (selectedBrand !== "all" && product.brand !== selectedBrand) return false;
+    if (priceBand === "under-5000" && product.price_etb_cents >= 500000) return false;
+    if (priceBand === "5000-15000" && (product.price_etb_cents < 500000 || product.price_etb_cents > 1500000)) return false;
+    if (priceBand === "over-15000" && product.price_etb_cents <= 1500000) return false;
+    const attributes = readAttributes(product.catalog_attributes);
+    return facets.every((facet) => !facetValues[facet.key] || attributes[facet.key] === facetValues[facet.key]);
+  }).sort((a, b) => sortBy === "price-low" ? a.price_etb_cents - b.price_etb_cents : sortBy === "price-high" ? b.price_etb_cents - a.price_etb_cents : sortBy === "name" ? a.name.localeCompare(b.name) : 0), [products, country, city, selectedBrand, priceBand, facets, facetValues, sortBy]);
 
   const chip = (active: boolean) => cn(
     "min-h-10 rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -97,6 +130,19 @@ function Shop() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="space-y-7 rounded-3xl border border-border bg-card p-5 lg:sticky lg:top-24 lg:h-fit" aria-label="Product filters">
+          <section>
+            <h2 className="mb-3 text-sm font-semibold">Sort & price</h2>
+            <Select value={sortBy} onValueChange={setSortBy}><SelectTrigger aria-label="Sort products"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="featured">Featured</SelectItem><SelectItem value="price-low">Price: low to high</SelectItem><SelectItem value="price-high">Price: high to low</SelectItem><SelectItem value="name">Name</SelectItem></SelectContent></Select>
+            <Select value={priceBand} onValueChange={setPriceBand}><SelectTrigger className="mt-2" aria-label="Filter by price"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="any">Any price</SelectItem><SelectItem value="under-5000">Under ETB 5,000</SelectItem><SelectItem value="5000-15000">ETB 5,000–15,000</SelectItem><SelectItem value="over-15000">Over ETB 15,000</SelectItem></SelectContent></Select>
+          </section>
+          <section>
+            <h2 className="mb-3 text-sm font-semibold">Brand</h2>
+            <Select value={selectedBrand} onValueChange={setSelectedBrand}><SelectTrigger aria-label="Filter by brand"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All brands</SelectItem>{brands.map((brand) => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}</SelectContent></Select>
+          </section>
+          {activeCategory && facets.length > 0 && <section className="space-y-3">
+            <h2 className="text-sm font-semibold">{activeCategory.name} filters</h2>
+            {facets.map((facet) => <div key={facet.key}><label htmlFor={`facet-${facet.key}`} className="mb-1.5 block text-xs text-muted-foreground">{facet.label}</label><Select value={facetValues[facet.key] ?? "__any__"} onValueChange={(value) => setFacetValues((previous) => ({ ...previous, [facet.key]: value === "__any__" ? "" : value }))}><SelectTrigger id={`facet-${facet.key}`} aria-label={`Filter by ${facet.label}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__any__">Any {facet.label.toLowerCase()}</SelectItem>{facet.options.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent></Select></div>)}
+          </section>}
           <section>
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold"><SlidersHorizontal className="h-4 w-4" aria-hidden /> Choose a collection</h2>
             <div className="flex flex-wrap gap-2 lg:flex-col">
@@ -155,8 +201,8 @@ function Shop() {
 
         <section aria-labelledby="results-heading">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{category ? categories.find((item) => item.id === category)?.name : "Curated for everyday life"}</p><h2 id="results-heading" className="mt-1 font-display text-3xl font-medium">{channel === "seller" ? "Local seller finds" : channel === "sourcing" ? "Global sourcing" : "Explore the collection"}</h2><p className="mt-1 text-sm text-muted-foreground" aria-live="polite">{resultLabel}{region ? ` · ${MARKET_REGIONS.find((market) => market.value === region)?.label}` : ""}{country ? ` · ${country}` : ""}{city ? ` · ${city}` : ""}{q ? ` for “${q}”` : ""}</p></div>
-            {(channel || category || region || country || city || q) && <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setSearchInput(""); navigate({ search: { q: undefined, category: undefined, channel: undefined, region: undefined, country: undefined, city: undefined } }); }}>Clear filters</Button>}
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{category ? activeCategory?.name : "Curated for everyday life"}</p><h2 id="results-heading" className="mt-1 font-display text-3xl font-medium">{channel === "seller" ? "Local seller finds" : channel === "sourcing" ? "Global sourcing" : "Explore the collection"}</h2><p className="mt-1 text-sm text-muted-foreground" aria-live="polite">{resultLabel}{region ? ` · ${MARKET_REGIONS.find((market) => market.value === region)?.label}` : ""}{country ? ` · ${country}` : ""}{city ? ` · ${city}` : ""}{q ? ` for “${q}”` : ""}</p></div>
+            {(channel || category || region || country || city || q || priceBand !== "any" || selectedBrand !== "all" || Object.values(facetValues).some(Boolean)) && <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setSearchInput(""); setFacetValues({}); setPriceBand("any"); setSortBy("featured"); setSelectedBrand("all"); navigate({ search: { q: undefined, category: undefined, channel: undefined, region: undefined, country: undefined, city: undefined } }); }}>Clear filters</Button>}
           </div>
 
           {isLoading ? <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 xl:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="aspect-[4/5] w-full rounded-2xl" />)}</div> : isError ? (
