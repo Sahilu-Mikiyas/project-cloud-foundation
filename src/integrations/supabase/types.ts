@@ -436,6 +436,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_catalog_sample: boolean
           is_published: boolean
           listing_type: "sourcing" | "seller"
           market_region: string
@@ -456,6 +457,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_catalog_sample?: boolean
           is_published?: boolean
           listing_type?: "sourcing" | "seller"
           market_region?: string
@@ -476,6 +478,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_catalog_sample?: boolean
           is_published?: boolean
           listing_type?: "sourcing" | "seller"
           market_region?: string

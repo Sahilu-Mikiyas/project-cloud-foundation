@@ -33,8 +33,8 @@ function Home() {
     queryKey: ["products", "featured"],
     queryFn: async () => {
       const { data, error } = await supabase.from("products")
-        .select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city")
-        .eq("is_published", true).order("created_at", { ascending: false }).limit(4);
+        .select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city, is_catalog_sample")
+        .eq("is_published", true).order("created_at", { ascending: false }).limit(16);
       if (error) throw error;
       return data;
     },
@@ -42,7 +42,7 @@ function Home() {
   const { data: categories = [] } = useQuery({
     queryKey: ["categories", "home"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("id, slug, name").order("sort_order").limit(8);
+      const { data, error } = await supabase.from("categories").select("id, slug, name").order("sort_order").limit(12);
       if (error) throw error;
       return data;
     },
@@ -128,7 +128,7 @@ function Home() {
       <Reveal>
         <section id="featured" className="mx-auto max-w-7xl scroll-mt-24 px-5 pt-20 sm:px-8 md:pt-28 lg:px-10">
           <div className="mb-8 flex items-end justify-between gap-5 sm:mb-10">
-            <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">A considered collection</p><h2 className="mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">Find your next favorite.</h2><p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">A few good things, selected from across both Shanta channels.</p></div>
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">A considered collection</p><h2 className="mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">Find your next favorite.</h2><p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">Browse live offers alongside clearly marked sample previews from markets around the world.</p></div>
             <Link to="/shop" className="hidden shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:-translate-y-0.5 hover:border-foreground/30 sm:inline-flex">Shop all <ArrowRight className="size-4" aria-hidden /></Link>
           </div>
           {isLoading ? <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="aspect-[4/3] w-full rounded-2xl" />)}</div> : isError ? (

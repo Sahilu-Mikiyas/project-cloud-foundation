@@ -48,7 +48,7 @@ function Shop() {
   const { data: products, isLoading, isError, refetch } = useQuery({
     queryKey: ["products", "list", category, channel, region, q],
     queryFn: async () => {
-      let query = supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city").eq("is_published", true);
+      let query = supabase.from("products").select("id, slug, name, brand, image_url, price_etb_cents, deposit_percent, delivery_days, listing_type, market_region, market_country, market_city, is_catalog_sample").eq("is_published", true);
       if (category) query = query.eq("category_id", category);
       if (channel) query = query.eq("listing_type", channel);
       if (region) query = query.eq("market_region", region);
