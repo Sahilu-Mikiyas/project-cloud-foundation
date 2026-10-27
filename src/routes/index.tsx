@@ -162,7 +162,9 @@ function Home() {
                 <div><span className="font-display text-3xl text-gold/80">0{index + 1}</span><h3 className="mt-3 font-display text-2xl">{market.label}</h3><p className="mt-2 min-h-10 text-sm leading-5 text-muted-foreground">{market.countries.length ? market.countries.join(" · ") : "New verified seller markets can appear here."}</p></div>
                 <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
                   <span className="text-xs text-muted-foreground">{market.listingCount === null ? isMarketCoverageError ? "Listings unavailable" : "Loading listings…" : `${market.listingCount} ${market.listingCount === 1 ? "listing" : "listings"}`}</span>
-                  <Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller", region: market.value }} className="inline-flex items-center gap-1 text-xs font-medium transition-colors hover:text-gold">Explore <ArrowUpRight className="size-3.5" aria-hidden /></Link>
+                  {market.listingCount === 0
+                    ? <Link to="/partner" className="inline-flex items-center gap-1 text-xs font-medium transition-colors hover:text-gold" aria-label={`Become a seller in ${market.label}`}>Sell here <ArrowUpRight className="size-3.5" aria-hidden /></Link>
+                    : <Link to="/shop" search={{ q: undefined, category: undefined, channel: "seller", region: market.value }} className="inline-flex items-center gap-1 text-xs font-medium transition-colors hover:text-gold">Explore <ArrowUpRight className="size-3.5" aria-hidden /></Link>}
                 </div>
               </article>
             ))}
